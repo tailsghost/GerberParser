@@ -9,4 +9,11 @@ public abstract class ConnectionPoint
     private int layer {  get; }
 
     private LogicalNet LogicalNet { get; }
+
+    protected ConnectionPoint(Point64 coordinate, int layer, LogicalNet net)
+    {
+        this.layer = layer;
+        this.coordinate = coordinate;
+        this.LogicalNet = net;
+    }
 }

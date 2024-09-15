@@ -22,7 +22,7 @@ public abstract class CircuitBoard
 
     public Paths64 Top_finish { get; }
 
-    public List<Via> Vias { get; }
+    public List<NcDrill.Via> Vias { get; }
 
     public long plating_thickness { get; }
 

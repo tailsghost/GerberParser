@@ -27,8 +27,8 @@ public abstract class Plot
     public abstract void DrawPaths(
         List<Path64> paths,
         bool polarity,
-        long translateX,
-        long translateY = 0,
+        double translateX,
+        double translateY = 0,
         bool mirrorX = false,
         bool mirrorY = false,
         double rotate = 0.0,
@@ -40,8 +40,8 @@ public abstract class Plot
     public abstract void DrawPlot(
         Plot plot,
         bool polarity = true,
-        long translateX = 0,
-        long translateY = 0,
+        double translateX = 0,
+        double translateY = 0,
         bool mirrorX = false,
         bool mirrorY = false,
         double rotate = 0.0,

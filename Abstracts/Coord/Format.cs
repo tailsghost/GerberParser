@@ -1,6 +1,8 @@
-﻿namespace GerberParser.Abstracts.Coord;
+﻿using Clipper2Lib;
 
-public abstract class Format
+namespace GerberParser.Abstracts.Coord;
+
+public abstract class FormatBase
 {
     protected bool fmtConfigured;
     protected int nInt;
@@ -11,7 +13,7 @@ public abstract class Format
     protected bool used;
     protected double miterLimit;
     protected double maxDeviation;
-    protected Format(double maxDeviation = 0.005, double miterLimit = 1.0)
+    protected FormatBase(double maxDeviation = 0.005, double miterLimit = 1.0)
     {
         this.maxDeviation = maxDeviation;
         this.miterLimit = miterLimit;
@@ -35,7 +37,7 @@ public abstract class Format
 
     public abstract long GetMiterLimit();
 
-    public abstract object BuildClipperOffset();
+    public abstract ClipperOffset BuildClipperOffset();
 
     public  abstract long FromMM(double i);
 

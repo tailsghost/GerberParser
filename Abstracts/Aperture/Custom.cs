@@ -10,5 +10,5 @@ public abstract class Custom : Base
         plot = data;
     }
 
-    public abstract override bool IsSimpleCircle(out long? diameter);
+    public abstract override bool IsSimpleCircle(out double diameter);
 }

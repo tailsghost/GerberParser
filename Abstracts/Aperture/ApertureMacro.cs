@@ -3,7 +3,7 @@ using GerberParser.Abstracts.Coord;
 
 namespace GerberParser.Abstracts.Aperture;
 
-public abstract class ApertureMacro
+public abstract class ApertureMacroBase
 {
     protected List<Expression> cmds = new();
 
@@ -12,5 +12,5 @@ public abstract class ApertureMacro
         
     }
 
-    public abstract Base Build(List<string> csep, Format fmt);
+    public abstract Base Build(List<string> csep, FormatBase fmt);
 }

@@ -1,4 +1,6 @@
-﻿namespace GerberParser.Abstracts.Aperture.ExpressionPropertry;
+﻿using GerberParser.Abstracts.Aperture;
+
+namespace GerberParser.Property.ExpressionPropertry;
 
 public class Token : Expression
 {

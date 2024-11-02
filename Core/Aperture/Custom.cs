@@ -1,5 +1,6 @@
 ﻿using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.PLOT;
+using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
 
@@ -10,8 +11,7 @@ public class Custom : Base
         plot = data;
     }
 
-
-    public override bool IsSimpleCircle(out double diameter)
+    public override bool IsSimpleCircle(out long? diameter)
     {
         diameter = 0;
         return false;

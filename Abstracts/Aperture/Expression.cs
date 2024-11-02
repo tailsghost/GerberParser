@@ -1,5 +1,4 @@
-﻿using GerberParser.Abstracts.Aperture.ExpressionPropertry;
-using System.Linq.Expressions;
+﻿using GerberParser.Property.ExpressionPropertry;
 
 namespace GerberParser.Abstracts.Aperture;
 
@@ -45,7 +44,7 @@ public abstract class Expression
                 char oper = expr[i].GetToken();
                 if (oper == '-' || oper == '+')
                 {
-                    expr[i] = new ExpressionPropertry.UnaryExpression(oper, expr[i + 1]);
+                    expr[i] = new UnaryExpression(oper, expr[i + 1]);
                     expr.RemoveAt(i + 1);
                 }
             }
@@ -56,7 +55,7 @@ public abstract class Expression
             char oper = expr[i].GetToken();
             if (oper == 'x' || oper == '/' || oper == '+' || oper == '-')
             {
-                expr[i - 1] = new ExpressionPropertry.BinaryExpression(oper, expr[i - 1], expr[i + 1]);
+                expr[i - 1] = new BinaryExpression(oper, expr[i - 1], expr[i + 1]);
                 expr.RemoveRange(i, 2);
                 i--;
             }

@@ -1,14 +1,12 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.Aperture;
-using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.Coord;
-using GerberParser.Abstracts.PLOT;
-using GerberParser.Core.ClipperPath;
+using GerberParser.Core.PlotCore;
 using Path = GerberParser.Core.ClipperPath.Path;
 
 namespace GerberParser.Core.Aperture;
 
-public class Obround : Base
+public class Obround : Standard
 {
     private double XSize { get; set; }
     private double YSize { get; set; }
@@ -45,21 +43,9 @@ public class Obround : Base
         plot = new Plot(paths);  
     }
 
-    public override bool IsSimpleCircle(out double diameter)
+    public override bool IsSimpleCircle(out long? diameter)
     {
         diameter = 0;
         return false;
-    }
-
-    private Paths64 GetHole(FormatBase fmt)
-    {
-        if (HoleDiameter <= 0)
-        {
-            return new Paths64();
-        }
-
-        var holePaths = Path.Render(new Paths64 { new Path64 { new Point64(0, 0) } }, HoleDiameter, false, fmt.BuildClipperOffset());
-        holePaths.Reverse();  
-        return holePaths;
     }
 }

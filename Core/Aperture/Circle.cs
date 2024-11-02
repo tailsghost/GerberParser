@@ -3,13 +3,14 @@ using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.Coord;
 using GerberParser.Abstracts.PLOT;
+using GerberParser.Core.PlotCore;
 using Path = GerberParser.Core.ClipperPath.Path;
 
 namespace GerberParser.Core.Aperture;
 
-public class Circle : Base
+public class Circle : Standard
 {
-    private double Diameter { get; set; }
+    private long Diameter { get; set; }
     private double HoleDiameter { get; set; }
 
     public Circle(List<string> csep, FormatBase fmt)
@@ -26,14 +27,14 @@ public class Circle : Base
 
         if (HoleDiameter > 0)
         {
-            var hole = new Standard(HoleDiameter).GetHole(fmt);
+            var hole = GetHole(fmt);
             paths.AddRange(hole);
         }
 
         plot = new Plot(paths);
     }
 
-    public override bool IsSimpleCircle(out double diameter)
+    public override bool IsSimpleCircle(out long? diameter)
     {
         if (HoleDiameter > 0.0)
         {

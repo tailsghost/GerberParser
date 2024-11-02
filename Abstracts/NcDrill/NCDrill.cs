@@ -1,6 +1,6 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.Coord;
-using GerberParser.Abstracts.PLOT;
+using GerberParser.Core.PlotCore;
 using GerberParser.Enums;
 
 namespace GerberParser.Abstracts.NcDrill;
@@ -8,7 +8,7 @@ namespace GerberParser.Abstracts.NcDrill;
 
 public abstract class NCDrill
 {
-    protected Format fmt;
+    protected FormatBase fmt;
 
     protected ParseState parseState;
 

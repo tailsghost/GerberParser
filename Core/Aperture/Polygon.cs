@@ -1,12 +1,11 @@
 ﻿using Clipper2Lib;
-using GerberParser.Abstracts.APERTURE;
+using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.Coord;
-using GerberParser.Abstracts.PLOT;
-using Path = GerberParser.Core.ClipperPath.Path;
+using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
 
-public class Polygon : Base
+public class Polygon : Standard
 {
     private double Diameter { get; set; }
     private int NVertices { get; set; }
@@ -53,21 +52,9 @@ public class Polygon : Base
         plot = new Plot(paths);
     }
 
-    public override bool IsSimpleCircle(out double diameter)
+    public override bool IsSimpleCircle(out long? diameter)
     {
         diameter = 0;
         return false;
-    }
-
-    private Paths64 GetHole(FormatBase fmt)
-    {
-        if (HoleDiameter <= 0)
-        {
-            return new Paths64();
-        }
-
-        var holePaths = Path.Render(new Paths64 { new Path64 { new Point64(0, 0) } }, HoleDiameter, false, fmt.BuildClipperOffset());
-        holePaths.Reverse();
-        return holePaths;
     }
 }

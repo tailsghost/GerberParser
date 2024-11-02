@@ -2,20 +2,19 @@
 
 namespace GerberParser.Abstracts.PLOT;
 
-public abstract class Plot
+public abstract class PlotBase
 {
-    protected List<Path64> accumPaths;
+    protected Paths64 accumPaths;
     protected bool accumPolarity;
-    protected List<Path64> dark;
-    protected List<Path64> clear;
+    protected Paths64 dark;
+    protected Paths64 clear;
     protected bool simplified;
 
-    protected Plot(List<Path64> dark = null, List<Path64> clear = null)
+    protected PlotBase(Paths64 dark = null, Paths64 clear = null)
     {
-        this.dark = dark ?? new List<Path64>();
-        this.clear = clear ?? new List<Path64>();
-        accumPaths = new List<Path64>();
         simplified = false;
+        this.dark = dark;
+        this.clear = clear;
     }
 
     protected abstract void CommitPaths(FillRule fillRule = FillRule.NonZero);
@@ -38,7 +37,7 @@ public abstract class Plot
     );
 
     public abstract void DrawPlot(
-        Plot plot,
+        PlotBase plot,
         bool polarity = true,
         double translateX = 0,
         double translateY = 0,
@@ -48,7 +47,7 @@ public abstract class Plot
         double scale = 1.0
     );
 
-    public abstract List<Path64> GetDark();
+    public abstract Paths64 GetDark();
 
     public abstract List<Path64> GetClear();
 }

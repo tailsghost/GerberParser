@@ -7,7 +7,7 @@ public abstract class Obround : Standard
     protected long xSize;
     protected long ySize;
 
-    public Obround(List<string> csep, Format fmt)
+    public Obround(List<string> csep, FormatBase fmt)
     {
     }
 

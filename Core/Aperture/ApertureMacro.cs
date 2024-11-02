@@ -4,6 +4,7 @@ using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.Coord;
 using GerberParser.Abstracts.PLOT;
 using GerberParser.Core.ClipperPath;
+using GerberParser.Core.PlotCore;
 using Path = GerberParser.Core.ClipperPath.Path;
 
 namespace GerberParser.Core.Aperture;
@@ -12,7 +13,7 @@ public class ApertureMacro : ApertureMacroBase
 {
     private readonly List<List<Expression>> cmds = new List<List<Expression>>();
 
-    public void Append(string cmd)
+    public override void Append(string cmd)
     {
         if (cmd.StartsWith("$"))
         {

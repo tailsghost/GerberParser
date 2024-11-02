@@ -1,13 +1,13 @@
 ﻿using Clipper2Lib;
-using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.Coord;
 using GerberParser.Abstracts.PLOT;
+using GerberParser.Core.Aperture;
 using GerberParser.Enums;
 
 namespace GerberParser.Abstracts.GERBER;
 
-public abstract class Gerber
+public abstract class GerberBase
 {
     protected Dictionary<int, Base> apertures = new Dictionary<int, Base>();
 
@@ -15,9 +15,9 @@ public abstract class Gerber
 
     protected ApertureMacro amBuilder;
 
-    protected Stack<Plot> plotStack = new Stack<Plot>();
+    protected Stack<PlotBase> plotStack = new Stack<PlotBase>();
 
-    protected Format fmt;
+    protected FormatBase fmt;
 
     protected InterpolationMode imode;
 
@@ -55,7 +55,7 @@ public abstract class Gerber
 
     protected abstract void EndAttrib();
 
-    protected Gerber(Stream stream)
+    protected GerberBase(Stream stream)
     {
     }
 

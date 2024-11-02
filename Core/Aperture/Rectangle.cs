@@ -2,12 +2,11 @@
 using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.Coord;
-using GerberParser.Abstracts.PLOT;
-using Path = GerberParser.Core.Path.Path;
+using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
 
-public class Rectangle : Base
+public class Rectangle : Standard
 {
     private double XSize { get; set; }
     private double YSize { get; set; }
@@ -33,17 +32,16 @@ public class Rectangle : Base
         };
         var paths = new Paths64 { rectangle };
 
-        // Добавляем отверстие, если оно есть
         if (HoleDiameter > 0)
         {
-            var hole = new Standard(HoleDiameter).GetHole(fmt);
+            var hole = GetHole(fmt);
             paths.AddRange(hole);
         }
 
         plot = new Plot(paths);
     }
 
-    public override bool IsSimpleCircle(out double diameter)
+    public override bool IsSimpleCircle(out long? diameter)
     {
         diameter = 0;
         return false;

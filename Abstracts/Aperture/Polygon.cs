@@ -8,7 +8,7 @@ public abstract class Polygon : Standard
     protected int nVertices;
     protected double rotation;
 
-    public Polygon(List<string> csep, Format fmt)
+    public Polygon(List<string> csep, FormatBase fmt)
     {
     }
 

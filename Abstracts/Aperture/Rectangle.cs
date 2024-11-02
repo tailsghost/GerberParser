@@ -7,7 +7,7 @@ public abstract class Rectangle : Standard
     protected long xSize;
     protected long ySize;
 
-    public Rectangle(List<string> csep, Format fmt)
+    public Rectangle(List<string> csep, FormatBase fmt)
     {
     }
 

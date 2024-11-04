@@ -1,7 +1,8 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.NcDrill;
-using GerberParser.Abstracts.NetList;
+using GerberParser.Core.NETLIST;
 using GerberParser.Core.PCB;
+using GerberParser.Property.Net;
 using System.Text;
 
 namespace GerberParser.Abstracts.PCB;
@@ -22,7 +23,7 @@ public abstract class CircuitBoard
 
     public Paths64 Top_finish { get; }
 
-    public List<NcDrill.Via> Vias { get; }
+    public List<Property.Drill.Via> Vias { get; }
 
     public long plating_thickness { get; }
 

@@ -17,6 +17,10 @@ public abstract class FormatBase
     {
         this.maxDeviation = maxDeviation;
         this.miterLimit = miterLimit;
+        this.addTrailingZeros = false;
+        this.unitConfigured = false;
+        this.fmtConfigured = false;
+        this.used = false;
     }
 
     public abstract void ConfigureFormat(int nInt, int nDec);

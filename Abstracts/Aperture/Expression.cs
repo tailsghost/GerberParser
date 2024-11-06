@@ -15,7 +15,6 @@ public abstract class Expression
             throw new Exception("empty aperture macro (sub)expression");
         }
 
-        // Обработка скобок
         for (int i = 0; i < expr.Count; i++)
         {
             if (expr[i].GetToken() == '(')
@@ -86,7 +85,7 @@ public abstract class Expression
             {
                 if (isNumber)
                 {
-                    tokens.Add(new LiteralExpression(double.Parse(currentToken)));
+                    tokens.Add(new LiteralExpression(double.Parse(currentToken, System.Globalization.CultureInfo.InvariantCulture)));
                     currentToken = "";
                     isNumber = false;
                 }

@@ -1,27 +1,25 @@
 ﻿using Clipper2Lib;
-using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.GERBER;
-using GerberParser.Abstracts.PLOT;
 using GerberParser.Core.Aperture;
-using GerberParser.Core.ClipperPath;
 using GerberParser.Core.PlotCore;
 using GerberParser.Enums;
 using GerberParser.Helpers;
 using Path = GerberParser.Core.ClipperPath.Path;
 
-namespace GerberParser.Core.Gerber;
+namespace GerberParser.Core.GERBER;
 
 public class Gerber : GerberBase
 {
-    public Gerber(Stream stream) : base(stream)
+    public Gerber(StringReader stream) : base(stream)
     {
     }
 
     public override Paths64 GetOutlinePaths()
     {
+        //Изменить на нужное
         double epsilon = 0.001;
 
-        if (outlineConstructed) return outline;
+        if (OutlineConstructed) return Outlines;
 
         var pointMap = new Dictionary<(double, double), List<int>>();
         var points = new HashSet<List<int>>();
@@ -29,7 +27,7 @@ public class Gerber : GerberBase
         double eps = fmt.GetMaxDeviation();
         double epsSqr = eps * eps;
 
-        foreach (var path in outline)
+        foreach (var path in Outlines)
         {
             var endpts = (first: (List<int>)null, second: (List<int>)null);
 
@@ -87,7 +85,7 @@ public class Gerber : GerberBase
             {
                 points.Remove(cur);
                 var endpts = endPoints[curIdx];
-                var section = outline[curIdx];
+                var section = Outlines[curIdx];
 
                 if (endpts.Item1 == cur)
                 {
@@ -128,22 +126,22 @@ public class Gerber : GerberBase
 
         //Необходимо использовать в дальнейшем Execute для EvenOdd
         paths = Clipper.SimplifyPaths(paths, epsilon, true);
-        outlineConstructed = true;
-        outline = paths;
-        return outline;
+        OutlineConstructed = true;
+        Outlines = paths;
+        return Outlines;
     }
 
 
     public override Paths64 GetPaths()
     {
-        return plotStack.Peek().GetDark();
+        return PlotStack.Peek().GetDark();
     }
 
     protected override bool Command(string cmd, bool isAttrib)
     {
-        if (amBuilder != null)
+        if (AmBuilder != null)
         {
-            amBuilder.Append(cmd);
+            AmBuilder.Append(cmd);
             return true;
         }
         else if (isAttrib)
@@ -172,34 +170,62 @@ public class Gerber : GerberBase
             if (cmd.StartsWith("AD"))
             {
                 if (cmd.Length < 3 || cmd[2] != 'D')
+                {
                     throw new Exception("Invalid aperture definition: " + cmd);
+                }
 
-                int index = int.Parse(cmd.Substring(3, cmd.Length - 3));
-                if (index < 10)
+                int i = 3;
+                int start = i;
+
+                while (i < cmd.Length && char.IsDigit(cmd[i]))
+                {
+                    i++;
+                }
+
+                if (!int.TryParse(cmd.Substring(start, i - start), out int index) || index < 10)
+                {
                     throw new Exception("Aperture index out of range: " + cmd);
+                }
 
-                var csep = new List<string>(cmd.Substring(cmd.IndexOf(",") + 1).Split(new[] { ',', 'X' }));
+                List<string> csep = new List<string>();
+                start = i;
+
+                while (i < cmd.Length)
+                {
+                    if (cmd[i] == ',' || (csep.Count > 0 && cmd[i] == 'X'))
+                    {
+                        csep.Add(cmd.Substring(start, i - start));
+                        start = i + 1;
+                    }
+                    i++;
+                }
+                csep.Add(cmd.Substring(start, i - start));
+
                 if (csep.Count == 0)
+                {
                     throw new Exception("Invalid aperture definition: " + cmd);
+                }
 
                 switch (csep[0])
                 {
                     case "C":
-                        apertures[index] = new Circle(csep, fmt);
+                        Apertures[index] = new Circle(csep, fmt);
                         break;
                     case "R":
-                        apertures[index] = new Aperture.Rectangle(csep, fmt);
+                        Apertures[index] = new Aperture.Rectangle(csep, fmt);
                         break;
                     case "O":
-                        apertures[index] = new Aperture.Obround(csep, fmt);
+                        Apertures[index] = new Aperture.Obround(csep, fmt);
                         break;
                     case "P":
-                        apertures[index] = new Aperture.Polygon(csep, fmt);
+                        Apertures[index] = new Aperture.Polygon(csep, fmt);
                         break;
                     default:
-                        if (!apertureMacros.TryGetValue(csep[0], out var macro))
+                        if (!ApertureMacros.TryGetValue(csep[0], out var macro))
+                        {
                             throw new Exception("Unsupported aperture type: " + csep[0]);
-                        apertures[index] = macro.Build(csep, fmt);
+                        }
+                        Apertures[index] = macro.Build(csep, fmt);
                         break;
                 }
                 return true;
@@ -208,8 +234,8 @@ public class Gerber : GerberBase
             if (cmd.StartsWith("AM"))
             {
                 var name = cmd.Substring(2);
-                amBuilder = new ApertureMacro();
-                apertureMacros[name] = amBuilder;
+                AmBuilder = new ApertureMacro();
+                ApertureMacros[name] = AmBuilder;
                 return true;
             }
 
@@ -217,9 +243,9 @@ public class Gerber : GerberBase
             {
                 if (cmd == "AB")
                 {
-                    if (plotStack.Count <= 1)
+                    if (PlotStack.Count <= 1)
                         throw new Exception("Unmatched aperture block close command");
-                    plotStack.Pop();
+                    PlotStack.Pop();
                 }
                 else
                 {
@@ -228,8 +254,8 @@ public class Gerber : GerberBase
                         throw new Exception("Aperture index out of range: " + cmd);
 
                     var plot = new Plot();
-                    plotStack.Push(plot);
-                    apertures[index] = new Aperture.Custom(plot);
+                    PlotStack.Push(plot);
+                    Apertures[index] = new Custom(plot);
                 }
                 return true;
             }
@@ -239,7 +265,7 @@ public class Gerber : GerberBase
                 if (cmd.Length != 3 || (cmd[2] != 'C' && cmd[2] != 'D'))
                     throw new Exception("Invalid polarity command: " + cmd);
 
-                polarity = cmd[2] == 'D';
+                Polarity = cmd[2] == 'D';
                 return true;
             }
 
@@ -307,14 +333,14 @@ public class Gerber : GerberBase
 
             if (apCmd.StartsWith("D") && !apCmd.StartsWith("D0"))
             {
-                if (!apertures.TryGetValue(int.Parse(apCmd.Substring(1)), out aperture))
+                if (!Apertures.TryGetValue(int.Parse(apCmd.Substring(1)), out Aperture))
                     throw new Exception("Undefined aperture selected");
                 return true;
             }
 
             if (cmd.StartsWith("X") || cmd.StartsWith("Y") || cmd.StartsWith("I") || cmd.StartsWith("D"))
             {
-                var parameters = new Dictionary<char, long> { { 'X', pos.X }, { 'Y', pos.Y }, { 'I', 0 }, { 'J', 0 } };
+                var parameters = new Dictionary<char, long> { { 'X', Pos.X }, { 'Y', Pos.Y }, { 'I', 0 }, { 'J', 0 } };
                 int d = -1;
                 char code = ' ';
                 int start = 0;
@@ -338,18 +364,18 @@ public class Gerber : GerberBase
                 {
                     case 1:
                         Interpolate(new Point64 { X = parameters['X'], Y = parameters['Y'] }, new Point64 { X = parameters['I'], Y = parameters['J'] });
-                        pos.X = parameters['X'];
-                        pos.Y = parameters['Y'];
+                        Pos.X = parameters['X'];
+                        Pos.Y = parameters['Y'];
                         break;
                     case 2:
-                        if (regionMode) CommitRegion();
-                        pos.X = parameters['X'];
-                        pos.Y = parameters['Y'];
+                        if (RegionMode) CommitRegion();
+                        Pos.X = parameters['X'];
+                        Pos.Y = parameters['Y'];
                         break;
                     case 3:
-                        if (regionMode) throw new Exception("Cannot flash in region mode");
-                        pos.X = parameters['X'];
-                        pos.Y = parameters['Y'];
+                        if (RegionMode) throw new Exception("Cannot flash in region mode");
+                        Pos.X = parameters['X'];
+                        Pos.Y = parameters['Y'];
                         DrawAperture();
                         break;
                     default:
@@ -360,15 +386,15 @@ public class Gerber : GerberBase
 
             if (cmd == "G36")
             {
-                if (regionMode) throw new Exception("Already in region mode");
-                regionMode = true;
+                if (RegionMode) throw new Exception("Already in region mode");
+                RegionMode = true;
                 return true;
             }
             if (cmd == "G37")
             {
-                if (!regionMode) throw new Exception("Not in region mode");
+                if (!RegionMode) throw new Exception("Not in region mode");
                 CommitRegion();
-                regionMode = false;
+                RegionMode = false;
                 return true;
             }
 
@@ -396,33 +422,33 @@ public class Gerber : GerberBase
 
     protected override void CommitRegion()
     {
-        if (regionAccum.Count < 3)
+
+        if (RegionAccum.Count < 3)
+            return;
+        
+
+        if (Clipper.Area(RegionAccum) < 0)
         {
-            throw new InvalidOperationException("Encountered region with less than 3 vertices");
+            RegionAccum.Reverse();
         }
 
-        if (Clipper.Area(regionAccum) < 0)
-        {
-            regionAccum.Reverse();
-        }
-
-        plotStack.Peek().DrawPaths(new List<Path64> { regionAccum }, polarity);
-        regionAccum.Clear();
+        PlotStack.Peek().DrawPaths(new List<Path64> { RegionAccum }, Polarity);
+        RegionAccum.Clear();
     }
 
     protected override void DrawAperture()
     {
-        if (aperture == null)
+        if (Aperture == null)
         {
             throw new InvalidOperationException("Flash command before aperture set");
         }
-        plotStack.Peek().DrawPlot(
-            aperture.plot, polarity, pos.X, pos.Y, apMirrorX, apMirrorY, apRotate, apScale);
+        PlotStack.Peek().DrawPlot(
+            Aperture.Plot, Polarity, Pos.X, Pos.Y, apMirrorX, apMirrorY, apRotate, apScale);
     }
 
     protected override void EndAttrib()
     {
-        throw new NotImplementedException();
+        AmBuilder = null;
     }
 
     protected override void Interpolate(Point64 dest, Point64 center)
@@ -435,7 +461,7 @@ public class Gerber : GerberBase
         }
         else if (imode == InterpolationMode.LINEAR)
         {
-            path = new Path64 { pos, dest };
+            path = new Path64 { Pos, dest };
         }
         else
         {
@@ -449,17 +475,17 @@ public class Gerber : GerberBase
             }
             else if (qmode == QuadrantMode.MULTI)
             {
-                h = new CircularInterpolationHelper(pos, dest, new Point64(pos.X + center.X, pos.Y + center.Y), ccw, true);
+                h = new CircularInterpolationHelper(Pos, dest, new Point64(Pos.X + center.X, Pos.Y + center.Y), ccw, true);
             }
             else
             {
                 for (int k = 0; k < 4; k++)
                 {
                     var h2 = new CircularInterpolationHelper(
-                        pos, dest,
+                        Pos, dest,
                         new Point64(
-                            pos.X + ((k & 1) == 1 ? center.X : -center.X),
-                            pos.Y + ((k & 2) == 2 ? center.Y : -center.Y)
+                            Pos.X + ((k & 1) == 1 ? center.X : -center.X),
+                            Pos.Y + ((k & 2) == 2 ? center.Y : -center.Y)
                         ),
                         ccw, false
                     );
@@ -480,23 +506,23 @@ public class Gerber : GerberBase
             path = h.ToPath(fmt.GetMaxDeviation());
         }
 
-        if (polarity && plotStack.Count == 1)
+        if (Polarity && PlotStack.Count == 1)
         {
-            outline.Add(path);
+            Outlines.Add(path);
         }
 
-        if (regionMode)
+        if (RegionMode)
         {
-            regionAccum.AddRange(path.Skip(1));
+            RegionAccum.AddRange(path.Skip(1));
             return;
         }
 
-        if (aperture == null)
+        if (Aperture == null)
         {
             throw new InvalidOperationException("Interpolate command before aperture set");
         }
 
-        if (!aperture.IsSimpleCircle(out long? diameter))
+        if (!Aperture.IsSimpleCircle(out long? diameter))
         {
             throw new InvalidOperationException("Only simple circle apertures without a hole are supported for interpolation");
         }
@@ -505,6 +531,6 @@ public class Gerber : GerberBase
         if (thickness == 0) return;
 
         Paths64 paths = Path.Render(new Paths64 { path }, thickness, false, fmt.BuildClipperOffset());
-        plotStack.Peek().DrawPaths(paths, polarity);
+        PlotStack.Peek().DrawPaths(paths, Polarity);
     }
 }

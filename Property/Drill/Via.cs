@@ -6,11 +6,11 @@ public class Via
 {
     public Via(Path64 path, long finished_hole_size)
     {
-        Get_Path = path;
+        Path = path;
         Finished_hole_size = finished_hole_size;
     }
 
-    public Path64 Get_Path { get; }
+    public Path64 Path { get; }
 
     public long Finished_hole_size { get; }
 }

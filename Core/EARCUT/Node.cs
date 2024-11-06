@@ -1,4 +1,4 @@
-﻿namespace GerberParser.Abstracts.EARCUT;
+﻿namespace GerberParser.Core.EARCUT;
 
 public class Node<N>
 {
@@ -31,6 +31,6 @@ public class Node<N>
 
     public Node()
     {
-        
+
     }
 }

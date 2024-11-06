@@ -1,18 +1,19 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.Coord;
+using GerberParser.Core.Coord;
 using Path = GerberParser.Core.ClipperPath.Path;
 
 namespace GerberParser.Abstracts.Aperture;
 
 public abstract class Standard : Base
 {
-    protected long? holeDiameter;
+    protected long? HoleDiameter;
 
-    protected List<Path64> GetHole(FormatBase? format = null)
+    protected List<Path64> GetHole(ConcreteFormat format = null)
     {
 
-        if (holeDiameter <= 0.0)
+        if (HoleDiameter <= 0.0)
         {
             return new Paths64(); 
         }
@@ -22,7 +23,7 @@ public abstract class Standard : Base
             new Point64(0, 0)
         };
 
-        var paths = Path.Render(new Paths64 { holePath }, (double)holeDiameter, 
+        var paths = Path.Render(new Paths64 { holePath }, (double)HoleDiameter, 
             false, format.BuildClipperOffset());
 
         Clipper.ReversePaths(paths);

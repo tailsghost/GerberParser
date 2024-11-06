@@ -1,5 +1,4 @@
 ﻿using Clipper2Lib;
-using GerberParser.Abstracts.PCB;
 using GerberParser.Helpers;
 
 namespace GerberParser.Property.Net;

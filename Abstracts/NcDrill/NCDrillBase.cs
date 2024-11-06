@@ -1,5 +1,5 @@
 ﻿using Clipper2Lib;
-using GerberParser.Abstracts.Coord;
+using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 using GerberParser.Enums;
 using GerberParser.Property;
@@ -10,35 +10,35 @@ namespace GerberParser.Abstracts.NcDrill;
 
 public abstract class NCDrillBase
 {
-    protected FormatBase fmt;
+    protected ConcreteFormat fmt = new();
 
     protected ParseState parseState;
 
     protected bool plated;
 
-    protected Dictionary<long, Tool> tools;
+    protected Dictionary<long, Tool> Tools = new();
 
-    protected Tool tool;
+    protected Tool Tool;
 
-    protected RoutMode routMode;
+    protected RoutMode RoutMode;
 
-    protected Point64 pos;
+    protected Point64 Pos;
 
-    protected Path64 path;
+    protected Path64 Path = new();
 
-    protected Plot plotPth;
+    protected Plot PlotPth = new();
 
-    protected Plot plotNpth;
+    protected Plot PlotNpth = new();
 
-    protected List<Via> vias;
+    protected List<Via> Vias = new();
     protected abstract void CommitPath();
     protected abstract void AddArc(Point64 start, Point64 end, long radius, bool ccw);
     protected abstract Dictionary<char, string> ParseRegularCommand(string cmd);
     protected abstract bool Command(string cmd);
     public abstract Paths64 GetPaths(bool plated = true, bool unplated = true);
-    protected List<Via> GetVias()
+    public List<Via> GetVias()
     {
-        return vias;
+        return Vias;
     }
 }
 

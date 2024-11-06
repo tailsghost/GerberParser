@@ -1,6 +1,7 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.Coord;
+using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
@@ -12,7 +13,7 @@ public class Polygon : Standard
     private double Rotation { get; set; }
     private double HoleDiameter { get; set; }
 
-    public Polygon(List<string> csep, FormatBase fmt)
+    public Polygon(List<string> csep, ConcreteFormat fmt)
     {
         if (csep.Count < 3 || csep.Count > 5)
         {
@@ -49,7 +50,7 @@ public class Polygon : Standard
             paths.AddRange(hole);
         }
 
-        plot = new Plot(paths);
+        Plot = new Plot(paths);
     }
 
     public override bool IsSimpleCircle(out long? diameter)

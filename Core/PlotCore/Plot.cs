@@ -15,10 +15,10 @@ public class Plot : PlotBase
     {
         if (paths.Count == 0) return;
 
-        if (polarity != accumPolarity) CommitPaths();
-        accumPolarity = polarity;
+        if (polarity != AccumPolarity) CommitPaths();
+        AccumPolarity = polarity;
 
-        accumPaths.AddRange(paths);
+        AccumPaths.AddRange(paths);
     }
 
     public override void DrawPaths(List<Path64> paths, bool polarity, double translateX, double translateY = 0, bool mirrorX = false, bool mirrorY = false, double rotate = 0, double scale = 1, bool specialFillType = false, FillRule fillRule = FillRule.NonZero)
@@ -39,9 +39,9 @@ public class Plot : PlotBase
         double yx = iyy * -sinRot;
         double yy = iyy * cosRot;
 
-        for (int i = accumPaths.Count - paths.Count; i < accumPaths.Count; i++)
+        for (int i = AccumPaths.Count - paths.Count; i < AccumPaths.Count; i++)
         {
-            var path = accumPaths[i];
+            var path = AccumPaths[i];
             for (int j = 0; j < path.Count; j++)
             {
                 var c = path[j];
@@ -53,9 +53,9 @@ public class Plot : PlotBase
 
         if (mirrorX != mirrorY)
         {
-            for (int i = accumPaths.Count - paths.Count; i < accumPaths.Count; i++)
+            for (int i = AccumPaths.Count - paths.Count; i < AccumPaths.Count; i++)
             {
-                accumPaths[i].Reverse();
+                AccumPaths[i].Reverse();
             }
         }
 
@@ -72,38 +72,38 @@ public class Plot : PlotBase
     {
         CommitPaths();
         Simplify();
-        return clear;
+        return Clear;
     }
 
     public override Paths64 GetDark()
     {
         CommitPaths();
         Simplify();
-        return dark;
+        return Dark;
     }
 
     protected override void CommitPaths(FillRule fillRule = FillRule.NonZero)
     {
-        if (accumPaths.Count == 0) return;
+        if (AccumPaths.Count == 0) return;
 
-        double epsilon = 0.001;
+        double epsilon = 0.001; // В дальнейшем проверить
 
-        accumPaths = Clipper.SimplifyPaths(accumPaths, epsilon, true);
+        AccumPaths = Clipper.SimplifyPaths(AccumPaths, epsilon, true);
         var cld = new Clipper64();
         var clc = new Clipper64();
 
-        cld.AddSubject(dark);
-        clc.AddSubject(clear);
+        cld.AddSubject(Dark);
+        clc.AddSubject(Clear);
 
-        cld.AddClip(accumPaths);
-        clc.AddClip(accumPaths);
+        cld.AddClip(AccumPaths);
+        clc.AddClip(AccumPaths);
 
         Paths64 darkSolutionClosed = new Paths64();
         Paths64 darkSolutionOpen = new Paths64();
         Paths64 clearSolutionClosed = new Paths64();
         Paths64 clearSolutionOpen = new Paths64();
 
-        if (accumPolarity)
+        if (AccumPolarity)
         {
             cld.Execute(ClipType.Union, fillRule, darkSolutionClosed, darkSolutionOpen);
             clc.Execute(ClipType.Difference, fillRule, clearSolutionClosed, clearSolutionOpen);
@@ -114,21 +114,21 @@ public class Plot : PlotBase
             clc.Execute(ClipType.Union, fillRule, clearSolutionClosed, clearSolutionOpen);
         }
 
-        simplified = false;
-        accumPaths.Clear();
+        Simplified = false;
+        AccumPaths.Clear();
     }
 
     protected override void Simplify()
     {
-        if (simplified) return;
+        if (Simplified) return;
 
-        double epsilon = 0.001;
+        double epsilon = 0.001; // В дальнейшем проверить
 
         //Необходимо использовать в дальнейшем Execute NonZero
 
-        dark = Clipper.SimplifyPaths(dark, epsilon, true);
-        clear = Clipper.SimplifyPaths(clear, epsilon, true);
+        Dark = Clipper.SimplifyPaths(Dark, epsilon, true);
+        Clear = Clipper.SimplifyPaths(Clear, epsilon, true);
 
-        simplified = true;
+        Simplified = true;
     }
 }

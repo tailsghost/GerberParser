@@ -1,7 +1,7 @@
 ﻿using Clipper2Lib;
-using GerberParser.Abstracts.Object;
-using GerberParser.Abstracts.SVG;
-using GerberParser.Core.PCB;
+using GerberParser.Core.OBJECT;
+using GerberParser.Core.Svg;
+using GerberParser.Property.PCB;
 
 namespace GerberParser.Abstracts.PCB;
 

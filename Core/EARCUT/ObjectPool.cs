@@ -1,4 +1,4 @@
-﻿namespace GerberParser.Abstracts.EARCUT;
+﻿namespace GerberParser.Core.EARCUT;
 
 public class ObjectPool<T> where T : new()
 {

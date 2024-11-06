@@ -8,7 +8,7 @@ public class Custom : Base
 {
     public Custom(Plot data)
     {
-        plot = data;
+        Plot = data;
     }
 
     public override bool IsSimpleCircle(out long? diameter)

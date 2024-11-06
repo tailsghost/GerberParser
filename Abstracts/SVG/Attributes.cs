@@ -2,9 +2,9 @@
 
 namespace GerberParser.Abstracts.SVG;
 
-public abstract class Attributes
+public abstract class AttributesBase
 {
-    public StringBuilder Data { get; }
-    public abstract Attributes With(string key, string value);
+    public StringBuilder Data { get; } = new();
+    public abstract AttributesBase With(string key, string value);
     public abstract void WriteTo(StreamWriter stream);
 }

@@ -11,19 +11,19 @@ namespace GerberParser.Core.NCDRILL;
 
 internal class NCDrill : NCDrillBase
 {
-    public NCDrill(StreamReader s, bool defaultPlated)
+    public NCDrill(StringReader s, bool defaultPlated)
     {
         parseState = ParseState.PRE_HEADER;
         plated = defaultPlated;
         fmt.ConfigureFormat(4, 3);
         fmt.ConfigureMM();
-        pos = new Point64(0, 0);
-        routMode = RoutMode.DRILL;
+        Pos = new Point64(0, 0);
+        RoutMode = RoutMode.DRILL;
 
         bool terminated = false;
         var sb = new StringBuilder();
 
-        while (!s.EndOfStream)
+        while (s.Peek() != -1)
         {
             char c = (char)s.Read();
 
@@ -58,18 +58,18 @@ internal class NCDrill : NCDrillBase
             if (unplated)
             {
                 var clipper = new Clipper64();
-                clipper.AddSubject(plotPth.GetDark());
-                clipper.AddClip(plotNpth.GetDark());
+                clipper.AddSubject(PlotPth.GetDark());
+                clipper.AddClip(PlotNpth.GetDark());
                 clipper.Execute(ClipType.Union, FillRule.Positive, paths, new Paths64());
             }
             else
             {
-                paths = plotPth.GetDark();
+                paths = PlotPth.GetDark();
             }
         }
         else if (unplated)
         {
-            paths = plotNpth.GetDark();
+            paths = PlotNpth.GetDark();
         }
 
         paths = Clipper.ReversePaths(paths);
@@ -110,7 +110,7 @@ internal class NCDrill : NCDrillBase
             double va = f0 * a0 + f1 * a1;
             double vx = xc + r * Math.Cos(va);
             double vy = yc + r * Math.Sin(va);
-            path.Add(new Point64((long)Math.Round(vx), (long)Math.Round(vy)));
+            Path.Add(new Point64((long)Math.Round(vx), (long)Math.Round(vy)));
         }
     }
 
@@ -176,7 +176,7 @@ internal class NCDrill : NCDrillBase
                 if (!paramsDict.TryGetValue('C', out var diameter))
                     throw new InvalidOperationException("missing tool diameter in " + cmd);
 
-                tools[toolNo] = new Tool(fmt.ParseFloat(diameter), plated);
+                Tools[toolNo] = new Tool(fmt.ParseFloat(diameter), plated);
                 return true;
             }
         }
@@ -186,32 +186,32 @@ internal class NCDrill : NCDrillBase
 
             var paramsDict = ParseRegularCommand(cmd);
 
-            var startPoint = pos;
+            var startPoint = Pos;
             bool coordSet = false;
             if (paramsDict.TryGetValue('X', out var xStr))
             {
-                pos.X = fmt.ParseFixed(xStr);
+                Pos.X = fmt.ParseFixed(xStr);
                 coordSet = true;
             }
             if (paramsDict.TryGetValue('Y', out var yStr))
             {
-                pos.Y = fmt.ParseFixed(yStr);
+                Pos.Y = fmt.ParseFixed(yStr);
                 coordSet = true;
             }
-            var endPoint = pos;
+            var endPoint = Pos;
 
             if (paramsDict.TryGetValue('T', out var tStr))
             {
                 int t = int.Parse(tStr);
-                if (routMode == RoutMode.ROUT_TOOL_DOWN)
+                if (RoutMode == RoutMode.ROUT_TOOL_DOWN)
                     throw new InvalidOperationException("unexpected tool change; tool is down");
 
                 if (t == 0)
                 {
-                    tool = null;
+                    Tool = null;
                     return true;
                 }
-                if (!tools.TryGetValue(t, out tool))
+                if (!Tools.TryGetValue(t, out Tool))
                     throw new InvalidOperationException("attempting to change to undefined tool: " + t);
                 return true;
             }
@@ -223,17 +223,17 @@ internal class NCDrill : NCDrillBase
                 switch (g)
                 {
                     case 0:
-                        routMode = RoutMode.ROUT_TOOL_UP;
+                        RoutMode = RoutMode.ROUT_TOOL_UP;
                         return true;
 
                     case 1:
-                        if (routMode == RoutMode.ROUT_TOOL_DOWN) path.Add(endPoint);
+                        if (RoutMode == RoutMode.ROUT_TOOL_DOWN) Path.Add(endPoint);
                         return true;
 
                     case 2:
                     case 3:
                         bool ccw = g == 3;
-                        if (routMode == RoutMode.ROUT_TOOL_DOWN)
+                        if (RoutMode == RoutMode.ROUT_TOOL_DOWN)
                         {
                             if (!paramsDict.TryGetValue('A', out var aStr))
                                 throw new InvalidOperationException("arc radius is missing for G0" + g);
@@ -242,28 +242,28 @@ internal class NCDrill : NCDrillBase
                         return true;
 
                     case 5:
-                        if (routMode == RoutMode.ROUT_TOOL_DOWN)
+                        if (RoutMode == RoutMode.ROUT_TOOL_DOWN)
                             throw new InvalidOperationException("unexpected G05; cannot exit route mode with tool down");
-                        routMode = RoutMode.DRILL;
+                        RoutMode = RoutMode.DRILL;
                         return true;
 
                     case 85:
                         var subCmd = cmd[..cmd.IndexOf('G')];
                         paramsDict = ParseRegularCommand(subCmd);
-                        if (paramsDict.TryGetValue('X', out xStr)) pos.X = fmt.ParseFixed(xStr);
-                        if (paramsDict.TryGetValue('Y', out yStr)) pos.Y = fmt.ParseFixed(yStr);
-                        startPoint = pos;
+                        if (paramsDict.TryGetValue('X', out xStr)) Pos.X = fmt.ParseFixed(xStr);
+                        if (paramsDict.TryGetValue('Y', out yStr)) Pos.Y = fmt.ParseFixed(yStr);
+                        startPoint = Pos;
 
                         paramsDict = ParseRegularCommand(cmd[(cmd.IndexOf('G')..)]);
-                        if (paramsDict.TryGetValue('X', out xStr)) pos.X = fmt.ParseFixed(xStr);
-                        if (paramsDict.TryGetValue('Y', out yStr)) pos.Y = fmt.ParseFixed(yStr);
-                        endPoint = pos;
+                        if (paramsDict.TryGetValue('X', out xStr)) Pos.X = fmt.ParseFixed(xStr);
+                        if (paramsDict.TryGetValue('Y', out yStr)) Pos.Y = fmt.ParseFixed(yStr);
+                        endPoint = Pos;
 
-                        if (routMode != RoutMode.DRILL)
+                        if (RoutMode != RoutMode.DRILL)
                             throw new InvalidOperationException("unexpected G85 in rout mode");
 
-                        path.Add(startPoint);
-                        path.Add(endPoint);
+                        Path.Add(startPoint);
+                        Path.Add(endPoint);
                         CommitPath();
                         return true;
 
@@ -282,22 +282,22 @@ internal class NCDrill : NCDrillBase
                 switch (m)
                 {
                     case 15:
-                        if (routMode == RoutMode.ROUT_TOOL_DOWN)
+                        if (RoutMode == RoutMode.ROUT_TOOL_DOWN)
                             throw new InvalidOperationException("unexpected M15; tool already down");
-                        if (routMode == RoutMode.DRILL)
+                        if (RoutMode == RoutMode.DRILL)
                             throw new InvalidOperationException("unexpected M15; not in rout mode");
 
-                        routMode = RoutMode.ROUT_TOOL_DOWN;
-                        path.Add(endPoint);
+                        RoutMode = RoutMode.ROUT_TOOL_DOWN;
+                        Path.Add(endPoint);
                         return true;
 
                     case 16:
-                        if (routMode == RoutMode.ROUT_TOOL_UP)
+                        if (RoutMode == RoutMode.ROUT_TOOL_UP)
                             throw new InvalidOperationException("unexpected M16; tool already up");
-                        if (routMode == RoutMode.DRILL)
+                        if (RoutMode == RoutMode.DRILL)
                             throw new InvalidOperationException("unexpected M16; not in rout mode");
 
-                        routMode = RoutMode.ROUT_TOOL_UP;
+                        RoutMode = RoutMode.ROUT_TOOL_UP;
                         CommitPath();
                         return true;
 
@@ -305,7 +305,7 @@ internal class NCDrill : NCDrillBase
                         return true;
 
                     case 30:
-                        if (routMode == RoutMode.ROUT_TOOL_DOWN)
+                        if (RoutMode == RoutMode.ROUT_TOOL_DOWN)
                             throw new InvalidOperationException("end of file with routing tool down");
                         return false;
                 }
@@ -313,7 +313,7 @@ internal class NCDrill : NCDrillBase
 
             if (coordSet)
             {
-                path.Add(endPoint);
+                Path.Add(endPoint);
                 CommitPath();
                 return true;
             }
@@ -325,24 +325,24 @@ internal class NCDrill : NCDrillBase
     protected override void CommitPath()
     {
         Paths64 point64s = new Paths64();
-        point64s.Add(path);
+        point64s.Add(Path);
 
-        if (tool == null)
+        if (Tool == null)
         {
             throw new InvalidOperationException("tool use before any tool is selected");
         }
 
-        if (tool.plated)
+        if (Tool.plated)
         {
-            plotPth.DrawPaths(Path.Render(point64s, tool.diameter, false, fmt.BuildClipperOffset()));
-            vias.Add(new Via(path, tool.diameter));
+            PlotPth.DrawPaths(ClipperPath.Path.Render(point64s, Tool.diameter, false, fmt.BuildClipperOffset()));
+            Vias.Add(new Via(Path, Tool.diameter));
         }
         else
         {
-            plotNpth.DrawPaths(Path.Render(point64s, tool.diameter, false, fmt.BuildClipperOffset()));
+            PlotNpth.DrawPaths(ClipperPath.Path.Render(point64s, Tool.diameter, false, fmt.BuildClipperOffset()));
         }
 
-        path.Clear();
+        Path.Clear();
     }
 
     protected override Dictionary<char, string> ParseRegularCommand(string cmd)

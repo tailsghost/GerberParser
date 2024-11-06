@@ -1,5 +1,4 @@
 ﻿using Clipper2Lib;
-using System.Net;
 
 namespace GerberParser.Property.Net;
 

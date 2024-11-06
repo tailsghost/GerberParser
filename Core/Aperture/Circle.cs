@@ -1,8 +1,7 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.Aperture;
-using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.Coord;
-using GerberParser.Abstracts.PLOT;
+using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 using Path = GerberParser.Core.ClipperPath.Path;
 
@@ -13,7 +12,7 @@ public class Circle : Standard
     private long Diameter { get; set; }
     private double HoleDiameter { get; set; }
 
-    public Circle(List<string> csep, FormatBase fmt)
+    public Circle(List<string> csep, ConcreteFormat fmt)
     {
         if (csep.Count < 2 || csep.Count > 3)
         {
@@ -31,7 +30,7 @@ public class Circle : Standard
             paths.AddRange(hole);
         }
 
-        plot = new Plot(paths);
+        Plot = new Plot(paths);
     }
 
     public override bool IsSimpleCircle(out long? diameter)

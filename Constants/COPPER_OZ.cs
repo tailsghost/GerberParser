@@ -1,4 +1,4 @@
-﻿namespace GerberParser.Core.PCB;
+﻿namespace GerberParser.Constants;
 
 public static class COPPER_OZ
 {

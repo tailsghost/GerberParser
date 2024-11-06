@@ -2,8 +2,6 @@
 using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.Coord;
-using GerberParser.Abstracts.PLOT;
-using GerberParser.Core.ClipperPath;
 using GerberParser.Core.PlotCore;
 using Path = GerberParser.Core.ClipperPath.Path;
 
@@ -143,16 +141,13 @@ public class ApertureMacro : ApertureMacroBase
         int nVertices = (int)Math.Round(cmd[2].Eval(vars));
         double rotation = cmd.Count > (5 + 2 * nVertices) ? cmd.Last().Eval(vars) : 0;
 
-        var paths = new Paths64
-        {
-            new Path64()
-        };
+        var paths = new Paths64();
 
         for (int i = 0; i < nVertices; i++)
         {
             double x = fmt.ToFixed(cmd[3 + 2 * i].Eval(vars));
             double y = fmt.ToFixed(cmd[4 + 2 * i].Eval(vars));
-            paths[0].Add(new Point64(x, y));
+            paths.Add(new Path64 { new Point64(x, y) });
         }
 
         plot.DrawPaths(paths, exposure, rotation);
@@ -167,17 +162,14 @@ public class ApertureMacro : ApertureMacroBase
         double diameter = Math.Abs(cmd[5].Eval(vars));
         double rotation = cmd.Count > 6 ? cmd[6].Eval(vars) : 0;
 
-        var paths = new Paths64
-        {
-            new Path64()
-        };
+        var paths = new Paths64();
 
         for (int i = 0; i < nVertices; i++)
         {
             double angle = ((double)i / nVertices) * 2.0 * Math.PI;
             double x = centerX + diameter * 0.5 * Math.Cos(angle);
             double y = centerY + diameter * 0.5 * Math.Sin(angle);
-            paths[0].Add(new Point64(fmt.ToFixed(x), fmt.ToFixed(y)));
+            paths.Add(new Path64 { new Point64(fmt.ToFixed(x), fmt.ToFixed(y))});
         }
 
         plot.DrawPaths(paths, exposure, rotation);

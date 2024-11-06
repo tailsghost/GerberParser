@@ -1,40 +1,11 @@
-﻿using System.Drawing;
-using System.Linq;
+﻿using GerberParser.Vertex;
 
-namespace GerberParser.Abstracts.EARCUT;
+namespace GerberParser.Core.EARCUT;
 
-public abstract class Earcut
+public class Earcut
 {
     public List<int> Indices { get; protected set; } = new List<int>();
     public int Vertices { get; protected set; } = 0;
-
-    public abstract void Execute(IEnumerable<IEnumerable<(double x, double y)>> polygons);
-
-    //protected abstract Node LinkedList(IEnumerable<(double x, double y)> points, bool clockwise);
-    //protected abstract void EarcutLinked(Node ear, int pass = 0);
-    //protected abstract bool IsEar(Node ear);
-    //protected abstract bool IsEarHashed(Node ear);
-    //protected abstract Node? CureLocalIntersections(Node start);
-    //protected abstract void SplitEarcut(Node start);
-    //protected abstract Node EliminateHoles(IEnumerable<IEnumerable<(double x, double y)>> points, Node outerNode);
-    //protected abstract void EliminateHole(Node hole, Node outerNode);
-    //protected abstract Node FindHoleBridge(Node hole, Node outerNode);
-    //protected abstract void IndexCurve(Node start);
-    //protected abstract Node SortLinked(Node list);
-    //protected abstract int ZOrder(double x, double y);
-    //protected abstract Node GetLeftmost(Node start);
-    //protected abstract bool PointInTriangle(double ax, double ay, double bx, double by, double cx, double cy, double px, double py);
-    //protected abstract bool IsValidDiagonal(Node a, Node b);
-    //protected abstract double Area(Node p, Node q, Node r);
-    //protected abstract bool Equals(Node p1, Node p2);
-    //protected abstract bool Intersects(Node p1, Node q1, Node p2, Node q2);
-    //protected abstract bool IntersectsPolygon(Node a, Node b);
-    //protected abstract bool LocallyInside(Node a, Node b);
-    //protected abstract bool MiddleInside(Node a, Node b);
-    //protected abstract Node SplitPolygon(Node a, Node b);
-    //protected abstract Node InsertNode(int i, (double x, double y) p, Node last);
-    //protected abstract void RemoveNode(Node p);
-
     protected bool Hashing { get; set; }
     protected double MinX { get; set; }
     protected double MaxX { get; set; }
@@ -44,7 +15,7 @@ public abstract class Earcut
 
     protected ObjectPool<Node<int>> Nodes { get; set; } = new();
 
-    public void Process(IEnumerable<IEnumerable<(double x, double y)>> points)
+    public void Process(IEnumerable<IEnumerable<Vertex2>> points)
     {
         Indices.Clear();
         Vertices = 0;
@@ -105,7 +76,7 @@ public abstract class Earcut
         Nodes.Clear();
     }
 
-    public Node<int> LinkedList(List<(double x, double y)> points, bool clockwise)
+    public Node<int> LinkedList(List<Vertex2> points, bool clockwise)
     {
         double sum = 0;
         int len = points.Count;
@@ -116,23 +87,23 @@ public abstract class Earcut
             var p1 = points[i];
             var p2 = points[j];
 
-            double p10 = p1.x;
-            double p11 = p1.y;
-            double p20 = p2.x;
-            double p21 = p2.y;
+            double p10 = p1.X;
+            double p11 = p1.Y;
+            double p20 = p2.X;
+            double p21 = p2.Y;
 
             sum += (p20 - p10) * (p11 + p21);
         }
 
-        if (clockwise == (sum > 0))
+        if (clockwise == sum > 0)
         {
             for (int i = 0; i < len; i++)
-                last = InsertNode(i, points[i], last); 
+                last = InsertNode(i, points[i], last);
         }
         else
         {
             for (int i = len; i-- > 0;)
-                last = InsertNode(i, points[i], last); 
+                last = InsertNode(i, points[i], last);
         }
 
         if (last != null && Equals(last, last.Next))
@@ -326,15 +297,15 @@ public abstract class Earcut
         } while (a != start);
     }
 
-    public Node<int> EliminateHoles(List<List<(double x, double y)>> points, Node<int> outerNode)
+    public Node<int> EliminateHoles(List<List<Vertex2>> points, Node<int> outerNode)
     {
         int len = points.Count;
 
         List<Node<int>> queue = new List<Node<int>>();
         for (int i = 1; i < len; i++)
         {
-            var holePoints = points[i];  
-            Node<int> list = LinkedList(holePoints, false);  
+            var holePoints = points[i];
+            Node<int> list = LinkedList(holePoints, false);
 
             if (list != null)
             {
@@ -410,7 +381,7 @@ public abstract class Earcut
             {
                 tanCur = Math.Abs(hy - p.y) / (hx - p.x);
 
-                if ((tanCur < tanMin || (tanCur == tanMin && p.x > m.x)) && LocallyInside(p, hole))
+                if ((tanCur < tanMin || tanCur == tanMin && p.x > m.x) && LocallyInside(p, hole))
                 {
                     m = p;
                     tanMin = tanCur;
@@ -470,7 +441,7 @@ public abstract class Earcut
 
                 qSize = inSize;
 
-                while (pSize > 0 || (qSize > 0 && q != null))
+                while (pSize > 0 || qSize > 0 && q != null)
                 {
                     if (pSize == 0)
                     {
@@ -520,17 +491,17 @@ public abstract class Earcut
         int x = (int)(32767.0 * (x_ - MinX) * InvSize);
         int y = (int)(32767.0 * (y_ - MinY) * InvSize);
 
-        x = (x | (x << 8)) & 0x00FF00FF;
-        x = (x | (x << 4)) & 0x0F0F0F0F;
-        x = (x | (x << 2)) & 0x33333333;
-        x = (x | (x << 1)) & 0x55555555;
+        x = (x | x << 8) & 0x00FF00FF;
+        x = (x | x << 4) & 0x0F0F0F0F;
+        x = (x | x << 2) & 0x33333333;
+        x = (x | x << 1) & 0x55555555;
 
-        y = (y | (y << 8)) & 0x00FF00FF;
-        y = (y | (y << 4)) & 0x0F0F0F0F;
-        y = (y | (y << 2)) & 0x33333333;
-        y = (y | (y << 1)) & 0x55555555;
+        y = (y | y << 8) & 0x00FF00FF;
+        y = (y | y << 4) & 0x0F0F0F0F;
+        y = (y | y << 2) & 0x33333333;
+        y = (y | y << 1) & 0x55555555;
 
-        return x | (y << 1);
+        return x | y << 1;
     }
 
     private Node<int> GetLeftmost(Node<int> start)
@@ -571,9 +542,9 @@ public abstract class Earcut
 
     private bool Intersects(Node<int> p1, Node<int> q1, Node<int> p2, Node<int> q2)
     {
-        if ((EqualsEarcut(p1, q1) && EqualsEarcut(p2, q2)) || (EqualsEarcut(p1, q2) && EqualsEarcut(p2, q1))) return true;
-        return (Area(p1, q1, p2) > 0) != (Area(p1, q1, q2) > 0) &&
-               (Area(p2, q2, p1) > 0) != (Area(p2, q2, q1) > 0);
+        if (EqualsEarcut(p1, q1) && EqualsEarcut(p2, q2) || EqualsEarcut(p1, q2) && EqualsEarcut(p2, q1)) return true;
+        return Area(p1, q1, p2) > 0 != Area(p1, q1, q2) > 0 &&
+               Area(p2, q2, p1) > 0 != Area(p2, q2, q1) > 0;
     }
 
     private bool IntersectsPolygon(Node<int> a, Node<int> b)
@@ -604,8 +575,8 @@ public abstract class Earcut
         double py = (a.y + b.y) / 2;
         do
         {
-            if (((p.y > py) != (p.Next.y > py)) && p.Next.y != p.y &&
-                (px < (p.Next.x - p.x) * (py - p.y) / (p.Next.y - p.y) + p.x))
+            if (p.y > py != p.Next.y > py && p.Next.y != p.y &&
+                px < (p.Next.x - p.x) * (py - p.y) / (p.Next.y - p.y) + p.x)
             {
                 inside = !inside;
             }
@@ -637,7 +608,7 @@ public abstract class Earcut
         return b2;
     }
 
-    private Node<int> InsertNode(int i, (double X, double Y) pt, Node<int> last)
+    private Node<int> InsertNode(int i, Vertex2 pt, Node<int> last)
     {
         var p = new Node<int>(i, pt.X, pt.Y);
 
@@ -669,11 +640,4 @@ public abstract class Earcut
             node.Next.Prev = node.Prev;
         }
     }
-
-    //public static List<int> Earcut(List<List<(double X, double Y)>> poly)
-    //{
-    //    var earcut = new Earcut();
-    //    earcut.Process(poly);
-    //    return earcut.Indices;
-    //}
 }

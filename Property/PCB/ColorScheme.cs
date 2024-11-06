@@ -1,14 +1,14 @@
-﻿using GerberParser.Core.Colors;
+﻿using GerberParser.Constants;
 
-namespace GerberParser.Core.PCB;
+namespace GerberParser.Property.PCB;
 
-public struct ColorScheme
+public class ColorScheme
 {
-   public Color soldermask { get; }
+    public Color soldermask { get; }
 
     public Color silkscreen { get; }
 
-    public Color finish {  get; }
+    public Color finish { get; }
 
     public Color substrate { get; }
 

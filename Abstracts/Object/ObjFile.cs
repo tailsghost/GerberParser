@@ -1,17 +1,17 @@
 ﻿using GerberParser.Helpers;
 using GerberParser.Vertex;
 
-namespace GerberParser.Abstracts.Object;
+namespace GerberParser.Abstracts.OBJECT;
 
-public abstract class ObjFile
+public abstract class ObjFileBase
 {
-    internal Indexed<Vertex3> Vertices { get; } = new Indexed<Vertex3>();
+    protected Indexed<Vertex3> Vertices { get; } = new Indexed<Vertex3>();
 
-    internal Indexed<Vertex2> UvCoordinates { get; } = new Indexed<Vertex2>();
+    protected Indexed<Vertex2> UvCoordinates { get; } = new Indexed<Vertex2>();
 
-    private List<Object> _objects = new();
+    protected List<Core.OBJECT.Object> Objects = new();
 
-    public abstract Object AddObject(string name, string material);
+    public abstract Core.OBJECT.Object AddObject(string name, string material);
 
     public abstract void ToFile(StringWriter stream);
 }

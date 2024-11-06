@@ -5,7 +5,7 @@ namespace GerberParser.Abstracts.Aperture;
 
 public abstract class ApertureMacroBase
 {
-    protected List<Expression> cmd = new();
+    protected List<Expression> Cmd = new();
 
     public abstract void Append(string cmd);
 

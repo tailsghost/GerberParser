@@ -18,7 +18,7 @@ public static class Path
         return outPaths;
     }
 
-    public static void Append(ref Paths64 dest, Paths64 src)
+    public static void Append(Paths64 dest, Paths64 src)
     {
         if (src.Count == 0)
         {

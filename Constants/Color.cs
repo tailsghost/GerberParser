@@ -1,17 +1,17 @@
-﻿namespace GerberParser.Core.Colors;
+﻿namespace GerberParser.Constants;
 
 
 public struct Color
 {
-    public float R;
-    public float G;
-    public float B;
-    public float A;
+    public float R { get; set; }
+    public float G { get; set; }
+    public float B { get; set; }
+    public float A { get; set; }
 }
 
 public static class ColorConstants
 {
-    public  static  Color NONE { get; } = new Color { A = 0.0f, B = 0.0f, G = 0.0f, R = 0.0f };
+    public static Color NONE { get; } = new Color { A = 0.0f, B = 0.0f, G = 0.0f, R = 0.0f };
 
     public static Color BLACK { get; } = new Color { A = 0.0f, B = 0.0f, G = 0.0f, R = 1.0f };
 

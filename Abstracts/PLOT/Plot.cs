@@ -4,17 +4,19 @@ namespace GerberParser.Abstracts.PLOT;
 
 public abstract class PlotBase
 {
-    protected Paths64 accumPaths;
-    protected bool accumPolarity;
-    protected Paths64 dark;
-    protected Paths64 clear;
-    protected bool simplified;
+    protected Paths64 AccumPaths = new();
+    protected bool AccumPolarity;
+    protected Paths64 Dark = new();
+    protected Paths64 Clear = new();
+    protected bool Simplified;
 
     protected PlotBase(Paths64 dark = null, Paths64 clear = null)
     {
-        simplified = false;
-        this.dark = dark;
-        this.clear = clear;
+        Simplified = false;
+        if (dark != null)
+            Dark = dark;
+        if (clear != null)
+            Clear = clear;
     }
 
     protected abstract void CommitPaths(FillRule fillRule = FillRule.NonZero);

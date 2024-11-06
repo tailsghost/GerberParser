@@ -1,0 +1,382 @@
+﻿using Clipper2Lib;
+using GerberParser.Abstracts.PCB;
+using GerberParser.Core.Coord;
+using GerberParser.Core.GERBER;
+using GerberParser.Core.NCDRILL;
+using GerberParser.Core.NETLIST;
+using GerberParser.Core.OBJECT;
+using GerberParser.Core.Svg;
+using GerberParser.Property.Net;
+using GerberParser.Property.PCB;
+using System.Text;
+
+namespace GerberParser.Core.PCB;
+
+public class CircuitBoard : CircuitBoardBase
+{
+    public CircuitBoard(string outline, List<string> drill, string drill_nonplated, string mill, double plating_thickness = 0.0174)
+        : base(outline, drill, drill_nonplated, mill, plating_thickness)
+    {
+    }
+
+    public override void Add_Copper_Layer(string gerber, double thickness = 0.0348)
+    {
+        Layers.Add(new CopperLayer(
+            $"copper{gerber}", BoardShape, BoardShapeExclPth, Read_Gerber(gerber), thickness
+        ));
+    }
+
+    public override void Add_Mask_Layer(string mask, string silk)
+    {
+        Layers.Add(new MaskLayer(
+            $"mask{mask}", BoardOutLine, Read_Gerber(mask), Read_Gerber(silk), Layers.Count == 0
+        ));
+    }
+
+    public override void Add_Substrate_Layer(double thickness = 1.5)
+    {
+        Layers.Add(new SubstrateLayer(
+            $"substrate{++NumSubstrateLayers}", BoardShape, SubstrateDielectric, SubstratePlating, thickness
+        ));
+    }
+
+    public override void Add_surface_finish()
+    {
+        Paths64 mask = new Paths64();
+
+        foreach (var layer in Layers)
+        {
+            if (layer is CopperLayer copperLayer)
+            {
+                BottomFinish = ClipperPath.Path.Subtract(copperLayer.GetMask(), mask);
+                break;
+            }
+            mask = ClipperPath.Path.Add(mask, layer.GetMask());
+        }
+
+        mask.Clear();
+
+        for (int i = Layers.Count - 1; i >= 0; i--)
+        {
+            if (Layers[i] is CopperLayer copperLayer)
+            {
+                TopFinish = ClipperPath.Path.Subtract(copperLayer.GetMask(), mask);
+                break;
+            }
+            mask = ClipperPath.Path.Add(mask, Layers[i].GetMask());
+        }
+    }
+
+    public override void Generate_mtl_file(StringBuilder stream)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Rect64 Get_Bounds()
+    {
+        var bounds = new Rect64
+        {
+            left = long.MaxValue,
+            bottom = long.MaxValue,
+            right = long.MinValue,
+            top = long.MinValue
+        };
+
+        foreach (var path in BoardOutLine)
+        {
+            foreach (var point in path)
+            {
+                bounds.left = Math.Min(bounds.left, point.X);
+                bounds.right = Math.Max(bounds.right, point.X);
+                bounds.bottom = Math.Min(bounds.bottom, point.Y);
+                bounds.top = Math.Max(bounds.top, point.Y);
+            }
+        }
+        return bounds;
+    }
+
+    public override NetlistBuilder Get_netlist_builder()
+    {
+        var nb = new NetlistBuilder();
+
+        foreach (var layer in Layers)
+        {
+            if (layer is CopperLayer copperLayer)
+            {
+                nb.Layer(copperLayer.GetMask());
+            }
+        }
+
+        foreach (var via in Vias)
+        {
+            nb.Via(via.Path, via.Finished_hole_size, PlatingThickness);
+        }
+
+        return nb;
+    }
+
+    public override PhysicalNetlist Get_physical_netlist()
+    {
+        var pn = new PhysicalNetlist();
+        int layerIndex = 0;
+
+        foreach (var layer in Layers)
+        {
+            if (layer is CopperLayer copperLayer)
+            {
+                pn.RegisterPaths(copperLayer.GetMask(), layerIndex++);
+            }
+        }
+
+        foreach (var via in Vias)
+        {
+            pn.RegisterVia(new Property.Net.Via(via.Path, via.Finished_hole_size, PlatingThickness), layerIndex);
+        }
+
+        return pn;
+    }
+
+    public override string Get_svg(bool flipped, ColorScheme colors, StringBuilder sb, string id_prefix = "")
+    {
+        if (flipped)
+        {
+            for (int i = Layers.Count - 1; i >= 0; i--)
+            {
+                sb.Append(Layers[i].ToSvg(colors, flipped, id_prefix));
+            }
+        }
+        else
+        {
+            foreach (var layer in Layers)
+            {
+                sb.Append(layer.ToSvg(colors, flipped, id_prefix));
+            }
+        }
+
+        var finish = new LayerSvg($"{id_prefix}finish");
+        finish.Add(flipped ? BottomFinish : TopFinish, colors.finish);
+        sb.Append(finish);
+
+        return sb.ToString();
+    }
+
+    public override void Read_Drill(string fname, bool plated, Paths64 pth, Paths64 npth)
+    {
+        if (string.IsNullOrEmpty(fname)) return;
+
+        //Необходимо заменить на нужное значение
+        double epsilon = 0.001;
+
+        var f = Read_File(fname);
+        var d = new NCDrill(f, plated);
+        var l = d.GetPaths(true, false);
+
+        if (pth.Count == 0)
+            pth = l;
+        else
+        {
+            pth.AddRange(l);
+            pth = Clipper.SimplifyPaths(pth, epsilon, true);
+        }
+
+        l = d.GetPaths(false, true);
+
+        if (npth.Count == 0)
+            npth = l;
+        else
+        {
+            npth.AddRange(l);
+            npth = Clipper.SimplifyPaths(npth, epsilon, true);
+        }
+
+        Vias.AddRange(d.GetVias());
+    }
+
+    public override StringReader Read_File(string buffer)
+    {
+        return new StringReader(buffer);
+    }
+
+    public override Paths64 Read_Gerber(string fname, bool outline = false)
+    {
+        if (string.IsNullOrEmpty(fname)) return new Paths64();
+
+        var f = new StringReader(fname);
+        var g = new Gerber(f);
+
+        var result = outline ? g.GetOutlinePaths() : g.GetPaths();
+
+        return result;
+    }
+
+    public override void GenerateMtlFile(StringBuilder sb)
+    {
+        GenerateMaterial(sb, "soldermask", "0.100 0.600 0.300", 0.6f);
+        GenerateMaterial(sb, "silkscreen", "0.899 0.899 0.899", 0.899f);
+        GenerateMaterial(sb, "finish", "0.699 0.699 0.699", 1.0f);
+        GenerateMaterial(sb, "substrate", "0.600 0.500 0.300", 1.0f);
+        GenerateMaterial(sb, "copper", "0.800 0.700 0.300", 1.0f);
+    }
+
+    public override void Write_Obj(StringWriter stream, Netlist netlist = null)
+    {
+        var obj = new ObjFile();
+        double z = 0.0;
+        int index = 0;
+        var copperZ = new List<(double, double)>();
+        foreach (var layer in Layers)
+        {
+            layer.ToObj(obj, index++, z, "");
+            if (layer is CopperLayer)
+            {
+                copperZ.Add((z, z + layer.Thickness));
+            }
+            z += layer.Thickness;
+        }
+
+        if (netlist != null)
+        {
+            RenderCopper(obj, netlist.connectedNetlist, copperZ);
+        }
+        else
+        {
+            RenderCopper(obj, Get_physical_netlist(), copperZ);
+        }
+
+        obj.ToFile(stream);
+    }
+
+    public override void Write_Svg(StringBuilder stream, bool flipped, double scale, ColorScheme? colors = null)
+    {
+        ConcreteFormat format = new ConcreteFormat();
+
+        var bounds = Get_Bounds();
+
+        var width = bounds.right - bounds.left + format.FromMM(20.0);
+        var height = bounds.top - bounds.bottom + format.FromMM(20.0);
+
+        stream.AppendLine($"<svg viewBox=\"0 0 {format.ToMM(width)} {format.ToMM(height)}\" " +
+        $"width=\"{format.ToMM(width) * scale}\" height=\"{format.ToMM(height) * scale}\" " +
+        $"xmlns=\"http://www.w3.org/2000/svg\">");
+
+        var tx = format.FromMM(10.0) - (flipped ? -bounds.right : bounds.left);
+        var ty = format.FromMM(10.0) + bounds.top;
+
+        stream.AppendLine($"<g transform=\"translate({format.ToMM(tx)} {format.ToMM(ty)}) " +
+                          $"scale({(flipped ? "-1" : "1")} -1)\" filter=\"drop-shadow(0 0 1 rgba(0, 0, 0, 0.2))\">");
+
+        stream.Append(Get_svg(flipped, colors, stream, ""));
+        stream.AppendLine("</g>\n</svg>");
+    }
+
+
+
+    private void RenderCircle(Point64 center, long diameter, Path64 output)
+    {
+        ConcreteFormat format = new();
+
+        double epsilon = format.GetMaxDeviation();
+        double r = diameter * 0.5;
+        double x = (r > epsilon) ? (1.0 - epsilon / r) : 0.0;
+        double th = Math.Acos(2.0 * x * x - 1.0) + 1e-3;
+        int nVertices = (int)Math.Ceiling(2.0 * Math.PI / th);
+        if (nVertices < 3) nVertices = 3;
+
+        output.Clear();
+        output.Capacity = nVertices;
+
+        for (int i = 0; i < nVertices; i++)
+        {
+            double a = 2.0 * Math.PI * i / nVertices;
+            long xPos = (long)Math.Round(Math.Cos(a) * r);
+            long yPos = (long)Math.Round(Math.Sin(a) * r);
+            output.Add(new Point64(center.X + xPos, center.Y + yPos));
+        }
+    }
+
+    private void RenderCopper(ObjFile obj, PhysicalNetlist netlist, List<(double, double)> copperZ)
+    {
+
+        int nameCounter = 1;
+        foreach (var net in netlist.nets)
+        {
+            string name = net.logicalNets.Any() ?
+                $"{net.logicalNets.First().name}_{nameCounter}" :
+                $"net_{nameCounter}";
+
+            nameCounter++;
+            var ob = obj.AddObject(name, "copper");
+
+            var vias = new List<Via>();
+            vias.Capacity = net.vias.Count;
+            foreach (var via in net.vias)
+            {
+                var center = via.GetCoordinate();
+                var diameter = via.finishedHoleSize;
+                int lowerLayer = via.GetLowerLayer(copperZ.Count);
+                int upperLayer = via.GetUpperLayer(copperZ.Count);
+
+                var inner = new Path64();
+                RenderCircle(center, diameter, inner);
+                ob.AddRing(inner, copperZ[lowerLayer].Item1, copperZ[upperLayer].Item2);
+
+                var outer = new Path64();
+                RenderCircle(center, diameter + 2 * via.platingThickness, outer);
+                for (int layer = lowerLayer; layer < upperLayer; layer++)
+                {
+                    ob.AddRing(outer, copperZ[layer].Item2, copperZ[layer + 1].Item1);
+                }
+
+                vias.Add(new Via(center, inner, outer, lowerLayer, upperLayer));
+            }
+
+            foreach (var shape in net.shapes)
+            {
+                var zs = copperZ[shape.layer];
+
+                ob.AddRing(shape.outline, zs.Item1, zs.Item2);
+                foreach (var path in shape.holes)
+                {
+                    ob.AddRing(path, zs.Item1, zs.Item2);
+                }
+
+                int layer = shape.layer;
+                for (int side = 0; side < 2; side++)
+                {
+                    double z = side == 1 ? zs.Item2 : zs.Item1;
+
+                    var holes = new Paths64(shape.holes);
+                    foreach (var via in vias)
+                    {
+                        if (layer < via.lower_layer || layer > via.upper_layer || !shape.Contains(via.center))
+                            continue;
+
+                        holes.Add((layer == via.lower_layer && side == 0) || (layer == via.upper_layer && side == 1)
+                            ? via.inner : via.outer);
+                    }
+
+                    ob.AddSurface(shape.outline, holes, z);
+                }
+            }
+        }
+    }
+
+    private struct Via
+    {
+        public Point64 center { get; }
+        public Path64 inner { get; }
+        public Path64 outer { get; }
+        public int lower_layer { get; }
+        public int upper_layer{ get; }
+
+        public Via(Point64 center, Path64 inner, Path64 outer, int lower_layer, int upper_layer)
+        {
+            this.center = center;
+            this.inner = inner;
+            this.outer = outer;
+            this.upper_layer = upper_layer;
+            this.lower_layer = lower_layer;
+        }
+    };
+
+}

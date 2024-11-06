@@ -2,6 +2,7 @@
 using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.APERTURE;
 using GerberParser.Abstracts.Coord;
+using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
@@ -12,7 +13,7 @@ public class Rectangle : Standard
     private double YSize { get; set; }
     private double HoleDiameter { get; set; }
 
-    public Rectangle(List<string> csep, FormatBase fmt)
+    public Rectangle(List<string> csep, ConcreteFormat fmt)
     {
         if (csep.Count < 3 || csep.Count > 4)
         {
@@ -38,7 +39,7 @@ public class Rectangle : Standard
             paths.AddRange(hole);
         }
 
-        plot = new Plot(paths);
+        Plot = new Plot(paths);
     }
 
     public override bool IsSimpleCircle(out long? diameter)

@@ -8,7 +8,6 @@ public abstract class FileBase
 {
     public StringWriter Writer { get; set; } = new();
     public StringWriter StringWriter { get; set; } = new();
-    protected ConcreteFormat Format { get; } = new();
     public bool IsStringWriter { get; }
     public abstract void Add(Layer layer);
     public abstract void Add(string svgData);

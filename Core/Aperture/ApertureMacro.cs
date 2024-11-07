@@ -1,9 +1,9 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.APERTURE;
-using GerberParser.Abstracts.Coord;
+using GerberParser.Core.ClipperPath;
+using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
-using Path = GerberParser.Core.ClipperPath.Path;
 
 namespace GerberParser.Core.Aperture;
 
@@ -29,7 +29,7 @@ public class ApertureMacro : ApertureMacroBase
         }
     }
 
-    public override Base Build(List<string> csep, FormatBase fmt)
+    public override Base Build(List<string> csep, ConcreteFormat fmt)
     {
         var vars = new Dictionary<int, double>();
         for (int i = 1; i < csep.Count; i++)
@@ -74,24 +74,32 @@ public class ApertureMacro : ApertureMacroBase
         return new Custom(plot);
     }
 
-    private void HandleCircle(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, FormatBase fmt)
+    private void HandleCircle(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
+
+        if (cmd.Count() < 5 || cmd.Count() > 6)
+            throw new ArgumentException("Invalid circle command in aperture macro");
+
         bool exposure = cmd[1].Eval(vars) > 0.5;
         double diameter = Math.Abs(cmd[2].Eval(vars));
         double centerX = cmd[3].Eval(vars);
         double centerY = cmd[4].Eval(vars);
         double rotation = cmd.Count > 5 ? cmd[5].Eval(vars) : 0;
 
-        var paths = Path.Render(new Paths64
+        var paths = new Paths64
         {
             new Path64 { new Point64(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
-        }, fmt.ToFixed(diameter), false, fmt.BuildClipperOffset());
+        }.Render(fmt.ToFixed(diameter), false, fmt.BuildClipperOffset());
 
-        plot.DrawPaths(paths, exposure, rotation);
+        plot.DrawPaths(paths, exposure, 0,0,false,false, rotation/ (180*Math.PI));
     }
 
-    private void HandleVectorLine(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, FormatBase fmt)
+    private void HandleVectorLine(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
+
+        if (cmd.Count() < 7 || cmd.Count() > 8)
+            throw new ArgumentException("Invalid circle command in aperture macro");
+
         bool exposure = cmd[1].Eval(vars) > 0.5;
         double width = Math.Abs(cmd[2].Eval(vars));
         double startX = cmd[3].Eval(vars);
@@ -100,20 +108,23 @@ public class ApertureMacro : ApertureMacroBase
         double endY = cmd[6].Eval(vars);
         double rotation = cmd.Count > 7 ? cmd[7].Eval(vars) : 0;
 
-        var paths = Path.Render(new Paths64
+        var paths = new Paths64
         {
             new Path64
             {
                 new Point64(fmt.ToFixed(startX), fmt.ToFixed(startY)),
                 new Point64(fmt.ToFixed(endX), fmt.ToFixed(endY))
             }
-        }, fmt.ToFixed(width), true, fmt.BuildClipperOffset());
+        }.Render(fmt.ToFixed(width), true, fmt.BuildClipperOffset());
 
-        plot.DrawPaths(paths, exposure, rotation);
+        plot.DrawPaths(paths, exposure, 0,0,false,false, rotation / (180 * Math.PI));
     }
 
-    private void HandleCenterLine(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, FormatBase fmt)
+    private void HandleCenterLine(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
+        if (cmd.Count < 6 || cmd.Count > 7)
+            throw new ArgumentException("invalid center line command in aperture macro");
+
         bool exposure = cmd[1].Eval(vars) > 0.5;
         double width = Math.Abs(cmd[2].Eval(vars));
         double height = Math.Abs(cmd[3].Eval(vars));
@@ -132,14 +143,22 @@ public class ApertureMacro : ApertureMacroBase
             }
         };
 
-        plot.DrawPaths(paths, exposure, rotation);
+        plot.DrawPaths(paths, exposure, 0,0,false,false,rotation / (180 * Math.PI));
     }
 
-    private void HandleOutline(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, FormatBase fmt)
+    private void HandleOutline(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
+
+        if (cmd.Count < 3)
+            throw new ArgumentException("Invalid outline command in aperture macro");
+
         bool exposure = cmd[1].Eval(vars) > 0.5;
         int nVertices = (int)Math.Round(cmd[2].Eval(vars));
+        int rotationIndex = 5 + 2 * nVertices;
         double rotation = cmd.Count > (5 + 2 * nVertices) ? cmd.Last().Eval(vars) : 0;
+
+        if (nVertices < 3 || cmd.Count() < rotationIndex || cmd.Count() > rotationIndex + 1)
+            throw new ArgumentException("Invalid outline command in aperture macro");
 
         var paths = new Paths64();
 
@@ -150,11 +169,15 @@ public class ApertureMacro : ApertureMacroBase
             paths.Add(new Path64 { new Point64(x, y) });
         }
 
-        plot.DrawPaths(paths, exposure, rotation);
+        plot.DrawPaths(paths, exposure, 0,0,false,false,rotation / (180 * Math.PI), 1.0, true, FillRule.NonZero);
     }
 
-    private void HandlePolygon(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, FormatBase fmt)
+    private void HandlePolygon(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
+
+        if (cmd.Count() < 6 || cmd.Count() > 7)
+            throw new ArgumentException("Invalid polygon command in aperture macro");
+
         bool exposure = cmd[1].Eval(vars) > 0.5;
         int nVertices = (int)Math.Round(cmd[2].Eval(vars));
         double centerX = cmd[3].Eval(vars);
@@ -172,11 +195,15 @@ public class ApertureMacro : ApertureMacroBase
             paths.Add(new Path64 { new Point64(fmt.ToFixed(x), fmt.ToFixed(y))});
         }
 
-        plot.DrawPaths(paths, exposure, rotation);
+        plot.DrawPaths(paths, exposure, 0,0,false,false,rotation/(180*Math.PI));
     }
 
-    private void HandleMoire(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, FormatBase fmt)
+    private void HandleMoire(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
+
+        if (cmd.Count() < 9 || cmd.Count() > 10)
+            throw new ArgumentException("Invalid moire command in aperture macro");
+
         double centerX = cmd[1].Eval(vars);
         double centerY = cmd[2].Eval(vars);
         double diameter = Math.Abs(cmd[3].Eval(vars));
@@ -191,10 +218,10 @@ public class ApertureMacro : ApertureMacroBase
 
         for (int i = 0; i < maxRings * 2 && diameter > 0.0; i++)
         {
-            var circlePaths = Path.Render(new Paths64
+            var circlePaths = new Paths64
             {
                 new Path64 { new Point64(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
-            }, fmt.ToFixed(diameter), false, fmt.BuildClipperOffset());
+            }.Render(fmt.ToFixed(diameter), false, fmt.BuildClipperOffset());
 
             if (i % 2 != 0)
             {
@@ -218,13 +245,25 @@ public class ApertureMacro : ApertureMacroBase
                 new Point64(fmt.ToFixed(centerX - chThickness * 0.5), fmt.ToFixed(centerY - chLength * 0.5)),
                 new Point64(fmt.ToFixed(centerX + chThickness * 0.5), fmt.ToFixed(centerY - chLength * 0.5))
             });
+
+            paths.Add(new Path64
+            {
+                new Point64(fmt.ToFixed(centerX + chLength * 0.5), fmt.ToFixed(centerY + chThickness * 0.5)),
+                new Point64(fmt.ToFixed(centerX - chLength * 0.5), fmt.ToFixed(centerY + chThickness * 0.5)),
+                new Point64(fmt.ToFixed(centerX - chLength * 0.5), fmt.ToFixed(centerY - chThickness * 0.5)),
+                new Point64(fmt.ToFixed(centerX + chLength * 0.5), fmt.ToFixed(centerY - chThickness * 0.5))
+            });
         }
 
-        plot.DrawPaths(paths, true, rotation);
+        //Возможно NonZero
+        plot.DrawPaths(paths, true, 0,0,false,false,rotation/(180*Math.PI), 1.0, true, FillRule.Positive);
     }
 
-    private void HandleThermal(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, FormatBase fmt)
+    private void HandleThermal(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
+        if (cmd.Count() < 6 || cmd.Count() > 7)
+            throw new ArgumentException("Invalid thermal command in aperture macro");
+
         double centerX = cmd[1].Eval(vars);
         double centerY = cmd[2].Eval(vars);
         double outer = Math.Abs(cmd[3].Eval(vars));
@@ -232,19 +271,38 @@ public class ApertureMacro : ApertureMacroBase
         double gap = Math.Abs(cmd[5].Eval(vars));
         double rotation = cmd.Count > 6 ? cmd[6].Eval(vars) : 0;
 
-        var paths = Path.Render(new Paths64
+        var paths = new Paths64
         {
             new Path64 { new Point64(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
-        }, fmt.ToFixed(outer), false, fmt.BuildClipperOffset());
+        }.Render(fmt.ToFixed(outer), false, fmt.BuildClipperOffset());
 
-        var innerPaths = Path.Render(new Paths64
+        var innerPaths = new Paths64
         {
             new Path64 { new Point64(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
-        }, fmt.ToFixed(inner), false, fmt.BuildClipperOffset());
+        }.Render(fmt.ToFixed(inner), false, fmt.BuildClipperOffset());
 
         innerPaths.Reverse();
         paths.AddRange(innerPaths);
 
-        plot.DrawPaths(paths, true, rotation);
+        if(gap>0.0)
+        {
+            paths.Add(new Path64
+            {
+                new Point64(fmt.ToFixed(centerX + gap * 0.5), fmt.ToFixed(centerY + outer * 0.5)),
+                new Point64(fmt.ToFixed(centerY + gap * 0.5), fmt.ToFixed(centerY - outer * 0.5)),
+                new Point64(fmt.ToFixed(centerY - gap * 0.5), fmt.ToFixed(centerY - outer * 0.5)),
+                new Point64(fmt.ToFixed(centerY - gap * 0.5), fmt.ToFixed(centerY + outer * 0.5)),
+            });
+            paths.Add(new Path64
+            {
+                new Point64(fmt.ToFixed(centerX + outer * 0.5), fmt.ToFixed(centerY + gap * 0.5)),
+                new Point64(fmt.ToFixed(centerX + outer * 0.5), fmt.ToFixed(centerY - gap * 0.5)),
+                new Point64(fmt.ToFixed(centerX - outer * 0.5), fmt.ToFixed(centerY - gap * 0.5)),
+                new Point64(fmt.ToFixed(centerX - outer * 0.5), fmt.ToFixed(centerY + gap * 0.5)),
+            });
+        }
+
+        //Возможно NonZero
+        plot.DrawPaths(paths, true, 0,0,false,false,rotation/(180*Math.PI),1.0, true, FillRule.Positive);
     }
 }

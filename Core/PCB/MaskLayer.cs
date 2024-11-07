@@ -1,5 +1,6 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.PCB;
+using GerberParser.Core.ClipperPath;
 using GerberParser.Core.OBJECT;
 using GerberParser.Core.Svg;
 using GerberParser.Property.PCB;
@@ -19,8 +20,8 @@ public class MaskLayer : Layer
     {
 
         Bottom = bottom;
-        Mask = ClipperPath.Path.Subtract(board_outline, mask_layer);
-        Silk = ClipperPath.Path.Intersect(Mask, silk_layer);
+        Mask = board_outline.Subtract(mask_layer);
+        Silk = Mask.Intersect(silk_layer);
     }
 
     public override Paths64 GetMask()

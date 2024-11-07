@@ -2,9 +2,9 @@
 
 namespace GerberParser.Core.ClipperPath;
 
-public static class Path
+public static class ClipperPath
 {
-    public static Paths64 Render(Paths64 paths, double thickness, bool square, ClipperOffset co)
+    public static Paths64 Render(this Paths64 paths, double thickness, bool square, ClipperOffset co)
     {
         JoinType joinType = square ? JoinType.Miter : JoinType.Round;
         EndType endType = square ? EndType.Butt : EndType.Round;
@@ -18,7 +18,7 @@ public static class Path
         return outPaths;
     }
 
-    public static void Append(Paths64 dest, Paths64 src)
+    public static void Append(this Paths64 dest, Paths64 src)
     {
         if (src.Count == 0)
         {
@@ -33,40 +33,38 @@ public static class Path
 
         dest.AddRange(src);
 
-        //Изменить 0.001
-        Clipper.SimplifyPaths(dest, 0.001); 
+        dest = dest.SimplifyPolygons(); 
     }
 
-    private static Paths64 PathOp(Paths64 lhs, Paths64 rhs, ClipType op)
+    private static Paths64 PathOp(this Paths64 lhs, Paths64 rhs, ClipType op)
     {
         var clipper = new Clipper64();
         clipper.AddSubject(lhs);
         clipper.AddClip(rhs);
 
         Paths64 solutionClosed = new Paths64();
-        Paths64 solutionOpen = new Paths64();
 
-        clipper.Execute(op, FillRule.Positive, solutionClosed, solutionOpen);
+        clipper.Execute(op, FillRule.NonZero, solutionClosed);
 
-        return solutionOpen; 
+        return solutionClosed; 
     }
 
-    public static Paths64 Add(Paths64 lhs, Paths64 rhs)
+    public static Paths64 Add(this Paths64 lhs, Paths64 rhs)
     {
         return PathOp(lhs, rhs, ClipType.Union);
     }
 
-    public static Paths64 Subtract(Paths64 lhs, Paths64 rhs)
+    public static Paths64 Subtract(this Paths64 lhs, Paths64 rhs)
     {
         return PathOp(lhs, rhs, ClipType.Difference);
     }
 
-    public static Paths64 Intersect(Paths64 lhs, Paths64 rhs)
+    public static Paths64 Intersect(this Paths64 lhs, Paths64 rhs)
     {
         return PathOp(lhs, rhs, ClipType.Intersection);
     }
 
-    public static Paths64 Offset(Paths64 src, double amount, bool square)
+    public static Paths64 Offset(this Paths64 src, double amount, bool square)
     {
 
         Clipper64 clipper = new();
@@ -79,13 +77,29 @@ public static class Path
 
         if (amount < 0)
         {
-            clipper.Execute(ClipType.Difference, FillRule.Positive, result);
+            clipper.Execute(ClipType.Difference, FillRule.NonZero, result);
         }
         else
         {
-            clipper.Execute(ClipType.Union, FillRule.Positive, result);
+            clipper.Execute(ClipType.Union, FillRule.NonZero, result);
         }
 
         return result;
+    }
+
+    public static Paths64 SimplifyPolygons(this Paths64 paths, FillRule fillRule = FillRule.EvenOdd, double epsilon = 0.001)
+    {
+        Paths64 simplifiedPaths = Clipper.SimplifyPaths(paths, epsilon, true);
+
+        var clipper = new Clipper64();
+
+        clipper.AddSubject(simplifiedPaths);
+
+        Paths64 resultClosed = new Paths64();
+        Paths64 resultOpen = new Paths64();
+
+        clipper.Execute(ClipType.Union, fillRule, resultClosed, resultOpen);
+
+        return resultClosed;
     }
 }

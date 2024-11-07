@@ -1,6 +1,7 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.SVG;
 using GerberParser.Constants;
+using GerberParser.Core.Coord;
 
 namespace GerberParser.Core.Svg;
 
@@ -26,10 +27,10 @@ public class LayerSvg : LayerSvgBase
 
         foreach (var path in paths)
         {
-            Data.Append($"M {Format.ToMM(path.Last().X)} {Format.ToMM(path.Last().Y)} ");
+            Data.Append($"M {FormatHelper.ToMM(path.Last().X)} {FormatHelper.ToMM(path.Last().Y)} ");
             foreach (var coord in path)
             {
-                Data.Append($"L {Format.ToMM(coord.X)} {Format.ToMM(coord.Y)} ");
+                Data.Append($"L {FormatHelper.ToMM(coord.X)} {FormatHelper.ToMM(coord.Y)} ");
             }
         }
         Data.Append("\"/>\n");

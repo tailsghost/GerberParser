@@ -1,9 +1,8 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.Aperture;
-using GerberParser.Abstracts.Coord;
+using GerberParser.Core.ClipperPath;
 using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
-using Path = GerberParser.Core.ClipperPath.Path;
 
 namespace GerberParser.Core.Aperture;
 
@@ -30,10 +29,10 @@ public class Obround : Standard
         x -= r;
         y -= r;
 
-        var paths = Path.Render(new Paths64
+        var paths = new Paths64
         {
             new Path64 { new Point64(-x, -y), new Point64(x, y) }
-        }, r * 2.0, false, fmt.BuildClipperOffset());
+        }.Render(r * 2.0, false, fmt.BuildClipperOffset());
 
         if (HoleDiameter > 0)
         {

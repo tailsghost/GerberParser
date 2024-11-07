@@ -1,5 +1,6 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.NetList;
+using GerberParser.Core.ClipperPath;
 using GerberParser.Core.Coord;
 using GerberParser.Property.Net;
 
@@ -7,9 +8,6 @@ namespace GerberParser.Core.NETLIST;
 
 public class NetlistBuilder : NetlistBuilderBase
 {
-
-    ConcreteFormat format = new();
-
     public override Netlist Build(long clearance)
     {
 
@@ -19,7 +17,7 @@ public class NetlistBuilder : NetlistBuilderBase
         foreach (var paths in Layers)
         {
             nl.connectedNetlist.RegisterPaths(paths, nl.numLayers);
-            var extendedPaths = ClipperPath.Path.Offset(paths, (double)clearance / 2, false);
+            var extendedPaths = paths.Offset((double)clearance / 2, false);
             nl.clearanceNetlist.RegisterPaths(extendedPaths, nl.numLayers);
             nl.numLayers++;
         }
@@ -28,7 +26,8 @@ public class NetlistBuilder : NetlistBuilderBase
         {
             if (!nl.connectedNetlist.RegisterVia(via, nl.numLayers))
             {
-                nl.builderViolations.Add($"via at coordinate ({format.ToMM(via.GetCoordinate().X)}, {format.ToMM(via.GetCoordinate().Y)}) is not connected to copper on one or more layers");
+                nl.builderViolations.Add($"via at coordinate ({FormatHelper.ToMM(via.GetCoordinate().X)}, " +
+                    $"{FormatHelper.ToMM(via.GetCoordinate().Y)}) is not connected to copper on one or more layers");
             }
             nl.clearanceNetlist.RegisterVia(via, nl.numLayers);
         }
@@ -44,8 +43,8 @@ public class NetlistBuilder : NetlistBuilderBase
 
             if (connectedNet == null)
             {
-                nl.builderViolations.Add($"connection at coordinate ({format.ToMM(connection.coordinate.X)}, " +
-                    $"{format.ToMM(connection.coordinate.Y)}) on layer {connection.GetLayer(nl.numLayers)} should be connected to logical net " +
+                nl.builderViolations.Add($"connection at coordinate ({FormatHelper.ToMM(connection.coordinate.X)}, " +
+                    $"{FormatHelper.ToMM(connection.coordinate.Y)}) on layer {connection.GetLayer(nl.numLayers)} should be connected to logical net " +
                     $"{logicalNet.name}, but there is no copper here");
                 continue;
             }

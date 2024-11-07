@@ -1,6 +1,5 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.Aperture;
-using GerberParser.Abstracts.Coord;
 using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 

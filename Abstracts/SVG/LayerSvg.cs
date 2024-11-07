@@ -20,8 +20,6 @@ public abstract class LayerSvgBase
 
     protected StringBuilder Data = new();
 
-    protected ConcreteFormat Format = new();
-
     public abstract void Add(Paths64 paths, Color? color, AttributesBase attr = null);
 
     public abstract void Add(string svgData);

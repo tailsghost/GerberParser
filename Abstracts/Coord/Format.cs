@@ -43,10 +43,6 @@ public abstract class FormatBase
 
     public abstract ClipperOffset BuildClipperOffset();
 
-    public  abstract long FromMM(double i);
-
-    public  abstract double ToMM(long i);
-
     protected abstract void TryToReconfigure();
 
     protected abstract void TryToUse();

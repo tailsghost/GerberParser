@@ -1,5 +1,4 @@
 ﻿using GerberParser.Abstracts.APERTURE;
-using GerberParser.Abstracts.PLOT;
 using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;

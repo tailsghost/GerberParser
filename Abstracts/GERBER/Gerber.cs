@@ -1,7 +1,5 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.APERTURE;
-using GerberParser.Abstracts.Coord;
-using GerberParser.Abstracts.PLOT;
 using GerberParser.Core.Aperture;
 using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
@@ -20,7 +18,7 @@ public abstract class GerberBase
 
     protected Stack<Plot> PlotStack = new Stack<Plot>();
 
-    protected ConcreteFormat fmt = new ConcreteFormat();
+    protected ConcreteFormat fmt = new();
 
     protected InterpolationMode imode;
 
@@ -105,22 +103,22 @@ public abstract class GerberBase
                 ss.Append(c);
             }
         }
-        //if (is_attrib)
-        //{
-        //    throw new InvalidOperationException("unterminated attribute");
-        //}
-        //if (!terminated)
-        //{
-        //    throw new InvalidOperationException("unterminated gerber file");
-        //}
-        //if (PlotStack.Count != 1)
-        //{
-        //    throw new InvalidOperationException("unterminated block aperture");
-        //}
-        //if (RegionMode)
-        //{
-        //    throw new InvalidOperationException("unterminated region block");
-        //}
+        if (is_attrib)
+        {
+            throw new InvalidOperationException("unterminated attribute");
+        }
+        if (!terminated)
+        {
+            throw new InvalidOperationException("unterminated gerber file");
+        }
+        if (PlotStack.Count != 1)
+        {
+            throw new InvalidOperationException("unterminated block aperture");
+        }
+        if (RegionMode)
+        {
+            throw new InvalidOperationException("unterminated region block");
+        }
     }
 
     public abstract Paths64 GetPaths();

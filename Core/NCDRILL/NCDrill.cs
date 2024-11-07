@@ -1,11 +1,11 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.NcDrill;
 using GerberParser.Core.ClipperPath;
+using GerberParser.Core.Coord;
 using GerberParser.Enums;
 using GerberParser.Property;
 using GerberParser.Property.Drill;
 using System.Text;
-using Path = GerberParser.Core.ClipperPath.Path;
 
 namespace GerberParser.Core.NCDRILL;
 
@@ -58,9 +58,11 @@ internal class NCDrill : NCDrillBase
             if (unplated)
             {
                 var clipper = new Clipper64();
+                Paths64 point64s = new Paths64();
                 clipper.AddSubject(PlotPth.GetDark());
                 clipper.AddClip(PlotNpth.GetDark());
-                clipper.Execute(ClipType.Union, FillRule.Positive, paths, new Paths64());
+                clipper.Execute(ClipType.Union, FillRule.Positive, point64s, new Paths64());
+                paths = point64s;
             }
             else
             {
@@ -334,12 +336,12 @@ internal class NCDrill : NCDrillBase
 
         if (Tool.plated)
         {
-            PlotPth.DrawPaths(ClipperPath.Path.Render(point64s, Tool.diameter, false, fmt.BuildClipperOffset()));
-            Vias.Add(new Via(Path, Tool.diameter));
+            PlotPth.DrawPaths(point64s.Render(Tool.diameter, false, fmt.BuildClipperOffset()));
+            Vias.Add(new Via(new Path64(Path), Tool.diameter));
         }
         else
         {
-            PlotNpth.DrawPaths(ClipperPath.Path.Render(point64s, Tool.diameter, false, fmt.BuildClipperOffset()));
+            PlotNpth.DrawPaths(point64s.Render(Tool.diameter, false, fmt.BuildClipperOffset()));
         }
 
         Path.Clear();

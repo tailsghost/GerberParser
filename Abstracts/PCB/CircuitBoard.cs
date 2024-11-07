@@ -10,55 +10,28 @@ namespace GerberParser.Abstracts.PCB;
 
 public abstract class CircuitBoardBase
 {
-    public Paths64 BoardOutLine { get; } = new();
+    protected ConcreteFormat Format = new();
+    public Paths64 BoardOutLine { get; protected set; } = new();
 
-    public Paths64 BoardShape { get; } = new();
+    public Paths64 BoardShape { get; protected set; } = new();
 
-    public Paths64 BoardShapeExclPth { get; } = new();
+    public Paths64 BoardShapeExclPth { get; protected set; } = new();
 
-    public Paths64 SubstrateDielectric { get; } = new();
+    public Paths64 SubstrateDielectric { get; protected set; } = new();
 
-    public Paths64 SubstratePlating { get; } = new();
+    public Paths64 SubstratePlating { get; protected set; } = new();
 
     public Paths64 BottomFinish { get; set; } = new();
 
     public Paths64 TopFinish { get; set; } = new();
 
-    public List<Property.Drill.Via> Vias { get; } = new();
+    public List<Property.Drill.Via> Vias { get; protected set; } = new();
 
-    public long PlatingThickness { get; }
+    public long PlatingThickness { get; protected set; }
 
-    public List<Layer> Layers { get; } = new();
+    public List<Layer> Layers { get; protected set; } = new();
 
     public ulong NumSubstrateLayers { get; set; }
-
-
-    protected CircuitBoardBase(string outline, List<string> drill, string drill_nonplated,
-        string mill, double plating_thickness = 0.5 * COPPER_OZ.Value)
-    {
-        ConcreteFormat format = new ConcreteFormat();
-        PlatingThickness = format.FromMM(0.5 * COPPER_OZ.Value);
-        BoardOutLine = Read_Gerber(outline, true);
-        Paths64 pth = new(), npth = new();
-        BoardOutLine.AddRange(Read_Gerber("", true));
-
-        foreach (var drillFile in drill)
-        {
-            Read_Drill(drillFile, true, pth, npth);
-            if (string.IsNullOrEmpty(drill_nonplated))
-            {
-                Read_Drill(drillFile, false, pth, npth);
-            }
-        }
-
-        var holes = Core.ClipperPath.Path.Add(pth, npth);
-        BoardShape = Core.ClipperPath.Path.Subtract(BoardOutLine, holes);
-        BoardShapeExclPth = Core.ClipperPath.Path.Subtract(BoardOutLine, npth);
-
-        var pthDrill = Core.ClipperPath.Path.Offset(pth, plating_thickness, true);
-        SubstrateDielectric = Core.ClipperPath.Path.Subtract(BoardOutLine, Core.ClipperPath.Path.Add(pthDrill, npth));
-        SubstratePlating = Core.ClipperPath.Path.Subtract(pthDrill, pth);
-    }
 
     protected void GenerateMaterial(StringBuilder sb, string type, string color, float transparency)
     {
@@ -73,7 +46,7 @@ public abstract class CircuitBoardBase
 
     public abstract Paths64 Read_Gerber(string fname, bool outline = false);
 
-    public abstract void Read_Drill(string fname, bool plated, Paths64 pth, Paths64 npth);
+    public abstract void Read_Drill(string fname, bool plated,ref Paths64 pth,ref Paths64 npth);
 
     public abstract void GenerateMtlFile(StringBuilder sb);
 

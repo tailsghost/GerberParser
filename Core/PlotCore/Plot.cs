@@ -1,5 +1,6 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.PLOT;
+using GerberParser.Core.ClipperPath;
 
 namespace GerberParser.Core.PlotCore;
 
@@ -86,14 +87,12 @@ public class Plot : PlotBase
     {
         if (AccumPaths.Count == 0) return;
 
-        double epsilon = 0.001; // В дальнейшем проверить
-
-        AccumPaths = Clipper.SimplifyPaths(AccumPaths, epsilon, true);
+        AccumPaths = AccumPaths.SimplifyPolygons(fillRule);
         var cld = new Clipper64();
         var clc = new Clipper64();
 
-        cld.AddSubject(Dark);
-        clc.AddSubject(Clear);
+        cld.AddOpenSubject(Dark);
+        clc.AddOpenSubject(Clear);
 
         cld.AddClip(AccumPaths);
         clc.AddClip(AccumPaths);
@@ -115,6 +114,8 @@ public class Plot : PlotBase
         }
 
         Simplified = false;
+        Dark = new Paths64(darkSolutionClosed.Distinct());
+        Clear = new Paths64(clearSolutionClosed.Distinct());
         AccumPaths.Clear();
     }
 
@@ -122,12 +123,8 @@ public class Plot : PlotBase
     {
         if (Simplified) return;
 
-        double epsilon = 0.001; // В дальнейшем проверить
-
-        //Необходимо использовать в дальнейшем Execute NonZero
-
-        Dark = Clipper.SimplifyPaths(Dark, epsilon, true);
-        Clear = Clipper.SimplifyPaths(Clear, epsilon, true);
+        Dark = Dark.SimplifyPolygons(FillRule.NonZero);
+        Clear = Clear.SimplifyPolygons(FillRule.NonZero);
 
         Simplified = true;
     }

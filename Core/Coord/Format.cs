@@ -1,7 +1,6 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.Coord;
 using System.Globalization;
-using System.Numerics;
 
 namespace GerberParser.Core.Coord;
 
@@ -82,38 +81,31 @@ public class ConcreteFormat : FormatBase
 
     public override long ParseFloat(string s)
     {
-        return ToFixed(double.Parse(s, CultureInfo.InvariantCulture));
+        var result = double.Parse(s, CultureInfo.InvariantCulture);
+        return ToFixed(result);
     }
 
     public override long ToFixed(double d)
     {
         TryToUse();
-        return (long)Math.Round(d * factor * 1e10);
+        var result = Math.Round(d * factor * 1e10);
+        var result1 = (long)result;
+        return result1;
     }
 
     public override long GetMaxDeviation()
     {
-        return FromMM(maxDeviation);
+        return FormatHelper.FromMM(maxDeviation);
     }
 
     public override long GetMiterLimit()
     {
-        return FromMM(miterLimit);
+        return FormatHelper.FromMM(miterLimit);
     }
 
     public override ClipperOffset BuildClipperOffset()
     {
         return new ClipperOffset(GetMiterLimit(), GetMaxDeviation());
-    }
-
-    public override long FromMM(double i)
-    {
-        return (long)Math.Round(i * 1e10);
-    }
-
-    public override double ToMM(long i)
-    {
-        return i / 1e10;
     }
 
     protected override void TryToReconfigure()
@@ -140,6 +132,7 @@ public class ConcreteFormat : FormatBase
                 "Cannot convert coordinates before unit is configured."
             );
         }
+
         used = true;
     }
 }

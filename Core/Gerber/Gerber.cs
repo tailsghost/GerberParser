@@ -1,10 +1,10 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.GERBER;
 using GerberParser.Core.Aperture;
+using GerberParser.Core.ClipperPath;
 using GerberParser.Core.PlotCore;
 using GerberParser.Enums;
 using GerberParser.Helpers;
-using Path = GerberParser.Core.ClipperPath.Path;
 
 namespace GerberParser.Core.GERBER;
 
@@ -16,9 +16,6 @@ public class Gerber : GerberBase
 
     public override Paths64 GetOutlinePaths()
     {
-        //Изменить на нужное
-        double epsilon = 0.001;
-
         if (OutlineConstructed) return Outlines;
 
         var pointMap = new Dictionary<(double, double), List<int>>();
@@ -123,9 +120,8 @@ public class Gerber : GerberBase
                 paths.Add(path);
             }
         }
+        paths = paths.SimplifyPolygons();
 
-        //Необходимо использовать в дальнейшем Execute для EvenOdd
-        paths = Clipper.SimplifyPaths(paths, epsilon, true);
         OutlineConstructed = true;
         Outlines = paths;
         return Outlines;
@@ -212,13 +208,13 @@ public class Gerber : GerberBase
                         Apertures[index] = new Circle(csep, fmt);
                         break;
                     case "R":
-                        Apertures[index] = new Aperture.Rectangle(csep, fmt);
+                        Apertures[index] = new Rectangle(csep, fmt);
                         break;
                     case "O":
-                        Apertures[index] = new Aperture.Obround(csep, fmt);
+                        Apertures[index] = new Obround(csep, fmt);
                         break;
                     case "P":
-                        Apertures[index] = new Aperture.Polygon(csep, fmt);
+                        Apertures[index] = new Polygon(csep, fmt);
                         break;
                     default:
                         if (!ApertureMacros.TryGetValue(csep[0], out var macro))
@@ -530,7 +526,7 @@ public class Gerber : GerberBase
         double thickness = (double)(diameter * apScale);
         if (thickness == 0) return;
 
-        Paths64 paths = Path.Render(new Paths64 { path }, thickness, false, fmt.BuildClipperOffset());
+        Paths64 paths = new Paths64 { path }.Render(thickness, false, fmt.BuildClipperOffset());
         PlotStack.Peek().DrawPaths(paths, Polarity);
     }
 }

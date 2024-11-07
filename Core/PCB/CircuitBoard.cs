@@ -1,5 +1,7 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.PCB;
+using GerberParser.Constants;
+using GerberParser.Core.ClipperPath;
 using GerberParser.Core.Coord;
 using GerberParser.Core.GERBER;
 using GerberParser.Core.NCDRILL;
@@ -15,21 +17,41 @@ namespace GerberParser.Core.PCB;
 public class CircuitBoard : CircuitBoardBase
 {
     public CircuitBoard(string outline, List<string> drill, string drill_nonplated, string mill, double plating_thickness = 0.0174)
-        : base(outline, drill, drill_nonplated, mill, plating_thickness)
     {
+        PlatingThickness = FormatHelper.FromMM(0.5 * COPPER_OZ.Value);
+        BoardOutLine = Read_Gerber(outline, true);
+        Paths64 pth = new(), npth = new();
+        BoardOutLine.AddRange(Read_Gerber("", true));
+
+        foreach (var drillFile in drill)
+        {
+            Read_Drill(drillFile, true, ref pth, ref npth);
+            if (string.IsNullOrEmpty(drill_nonplated))
+            {
+                Read_Drill(drillFile, false, ref pth, ref npth);
+            }
+        }
+
+        var holes = pth.Add( npth);
+        BoardShape = BoardOutLine.Subtract(holes);
+        BoardShapeExclPth = BoardOutLine.Subtract(npth);
+
+        var pthDrill = pth.Offset(plating_thickness, true);
+        SubstrateDielectric = BoardOutLine.Subtract(pthDrill.Add(npth));
+        SubstratePlating = pthDrill.Subtract(pth);
     }
 
     public override void Add_Copper_Layer(string gerber, double thickness = 0.0348)
     {
         Layers.Add(new CopperLayer(
-            $"copper{gerber}", BoardShape, BoardShapeExclPth, Read_Gerber(gerber), thickness
+            $"copper{++NumSubstrateLayers}", BoardShape, BoardShapeExclPth, Read_Gerber(gerber), thickness
         ));
     }
 
     public override void Add_Mask_Layer(string mask, string silk)
     {
         Layers.Add(new MaskLayer(
-            $"mask{mask}", BoardOutLine, Read_Gerber(mask), Read_Gerber(silk), Layers.Count == 0
+            $"mask{++NumSubstrateLayers}", BoardOutLine, Read_Gerber(mask), Read_Gerber(silk), Layers.Count == 0
         ));
     }
 
@@ -48,10 +70,10 @@ public class CircuitBoard : CircuitBoardBase
         {
             if (layer is CopperLayer copperLayer)
             {
-                BottomFinish = ClipperPath.Path.Subtract(copperLayer.GetMask(), mask);
+                BottomFinish = copperLayer.GetMask().Subtract(mask);
                 break;
             }
-            mask = ClipperPath.Path.Add(mask, layer.GetMask());
+            mask = mask.Add(layer.GetMask());
         }
 
         mask.Clear();
@@ -60,10 +82,10 @@ public class CircuitBoard : CircuitBoardBase
         {
             if (Layers[i] is CopperLayer copperLayer)
             {
-                TopFinish = ClipperPath.Path.Subtract(copperLayer.GetMask(), mask);
+                TopFinish = copperLayer.GetMask().Subtract(mask);
                 break;
             }
-            mask = ClipperPath.Path.Add(mask, Layers[i].GetMask());
+            mask = mask.Add(Layers[i].GetMask());
         }
     }
 
@@ -142,30 +164,29 @@ public class CircuitBoard : CircuitBoardBase
         {
             for (int i = Layers.Count - 1; i >= 0; i--)
             {
-                sb.Append(Layers[i].ToSvg(colors, flipped, id_prefix));
+                var str = (Layers[i].ToSvg(colors, flipped, id_prefix).ToString());
+                sb.Append(str);
             }
         }
         else
         {
             foreach (var layer in Layers)
             {
-                sb.Append(layer.ToSvg(colors, flipped, id_prefix));
+                var str = layer.ToSvg(colors, flipped, id_prefix).ToString();
+                sb.Append(str);
             }
         }
 
         var finish = new LayerSvg($"{id_prefix}finish");
         finish.Add(flipped ? BottomFinish : TopFinish, colors.finish);
-        sb.Append(finish);
+        sb.Append(finish.ToString());
 
         return sb.ToString();
     }
 
-    public override void Read_Drill(string fname, bool plated, Paths64 pth, Paths64 npth)
+    public override void Read_Drill(string fname, bool plated, ref Paths64 pth, ref Paths64 npth)
     {
         if (string.IsNullOrEmpty(fname)) return;
-
-        //Необходимо заменить на нужное значение
-        double epsilon = 0.001;
 
         var f = Read_File(fname);
         var d = new NCDrill(f, plated);
@@ -176,7 +197,7 @@ public class CircuitBoard : CircuitBoardBase
         else
         {
             pth.AddRange(l);
-            pth = Clipper.SimplifyPaths(pth, epsilon, true);
+            pth = pth.SimplifyPolygons();
         }
 
         l = d.GetPaths(false, true);
@@ -186,7 +207,7 @@ public class CircuitBoard : CircuitBoardBase
         else
         {
             npth.AddRange(l);
-            npth = Clipper.SimplifyPaths(npth, epsilon, true);
+            npth = npth.SimplifyPolygons();
         }
 
         Vias.AddRange(d.GetVias());
@@ -248,34 +269,31 @@ public class CircuitBoard : CircuitBoardBase
 
     public override void Write_Svg(StringBuilder stream, bool flipped, double scale, ColorScheme? colors = null)
     {
-        ConcreteFormat format = new ConcreteFormat();
-
         var bounds = Get_Bounds();
 
-        var width = bounds.right - bounds.left + format.FromMM(20.0);
-        var height = bounds.top - bounds.bottom + format.FromMM(20.0);
+        var width = bounds.right - bounds.left + FormatHelper.FromMM(20.0);
+        var height = bounds.top - bounds.bottom + FormatHelper.FromMM(20.0);
 
-        stream.AppendLine($"<svg viewBox=\"0 0 {format.ToMM(width)} {format.ToMM(height)}\" " +
-        $"width=\"{format.ToMM(width) * scale}\" height=\"{format.ToMM(height) * scale}\" " +
+        stream.AppendLine($"<svg viewBox=\"0 0 {FormatHelper.ToMM(width)} {FormatHelper.ToMM(height)}\" " +
+        $"width=\"{FormatHelper.ToMM(width) * scale}\" height=\"{FormatHelper.ToMM(height) * scale}\" " +
         $"xmlns=\"http://www.w3.org/2000/svg\">");
 
-        var tx = format.FromMM(10.0) - (flipped ? -bounds.right : bounds.left);
-        var ty = format.FromMM(10.0) + bounds.top;
+        var tx = FormatHelper.FromMM(10.0) - (flipped ? -bounds.right : bounds.left);
+        var ty = FormatHelper.FromMM(10.0) + bounds.top;
 
-        stream.AppendLine($"<g transform=\"translate({format.ToMM(tx)} {format.ToMM(ty)}) " +
+        stream.AppendLine($"<g transform=\"translate({FormatHelper.ToMM(tx)} {FormatHelper.ToMM(ty)}) " +
                           $"scale({(flipped ? "-1" : "1")} -1)\" filter=\"drop-shadow(0 0 1 rgba(0, 0, 0, 0.2))\">");
 
         stream.Append(Get_svg(flipped, colors, stream, ""));
-        stream.AppendLine("</g>\n</svg>");
+        stream.AppendLine("</g>");
+        stream.AppendLine("</svg>");
     }
 
 
 
     private void RenderCircle(Point64 center, long diameter, Path64 output)
     {
-        ConcreteFormat format = new();
-
-        double epsilon = format.GetMaxDeviation();
+        double epsilon = Format.GetMaxDeviation();
         double r = diameter * 0.5;
         double x = (r > epsilon) ? (1.0 - epsilon / r) : 0.0;
         double th = Math.Acos(2.0 * x * x - 1.0) + 1e-3;

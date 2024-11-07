@@ -1,9 +1,8 @@
 ﻿using Clipper2Lib;
 using GerberParser.Abstracts.Aperture;
-using GerberParser.Abstracts.Coord;
+using GerberParser.Core.ClipperPath;
 using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
-using Path = GerberParser.Core.ClipperPath.Path;
 
 namespace GerberParser.Core.Aperture;
 
@@ -22,7 +21,8 @@ public class Circle : Standard
         Diameter = fmt.ParseFloat(csep[1]);
         HoleDiameter = csep.Count > 2 ? fmt.ParseFloat(csep[2]) : 0;
 
-        var paths = Path.Render(new Paths64 { new Path64 { new Point64(0, 0) } }, Diameter, false, fmt.BuildClipperOffset());
+        var paths = new Paths64 { new Path64 { new Point64(0, 0) } }
+                        .Render(Diameter, false, fmt.BuildClipperOffset());
 
         if (HoleDiameter > 0)
         {

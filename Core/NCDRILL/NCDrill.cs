@@ -1,11 +1,14 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.NcDrill;
+﻿using GerberParser.Abstracts.NcDrill;
 using GerberParser.Core.ClipperPath;
 using GerberParser.Core.Coord;
 using GerberParser.Enums;
 using GerberParser.Property;
 using GerberParser.Property.Drill;
 using System.Text;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using ClipperLib;
 
 namespace GerberParser.Core.NCDRILL;
 
@@ -17,7 +20,7 @@ internal class NCDrill : NCDrillBase
         plated = defaultPlated;
         fmt.ConfigureFormat(4, 3);
         fmt.ConfigureMM();
-        Pos = new Point64(0, 0);
+        Pos = new ClipperLib.IntPoint(0, 0);
         RoutMode = RoutMode.DRILL;
 
         bool terminated = false;
@@ -49,20 +52,18 @@ internal class NCDrill : NCDrillBase
         }
     }
 
-    public override Paths64 GetPaths(bool plated = true, bool unplated = true)
+    public override Polygons GetPaths(bool plated = true, bool unplated = true)
     {
-        Paths64 paths = new Paths64();
+        Polygons paths = new();
 
         if (plated)
         {
             if (unplated)
             {
-                var clipper = new Clipper64();
-                Paths64 point64s = new Paths64();
-                clipper.AddSubject(PlotPth.GetDark());
-                clipper.AddClip(PlotNpth.GetDark());
-                clipper.Execute(ClipType.Union, FillRule.Positive, point64s, new Paths64());
-                paths = point64s;
+                var clipper = new Clipper();
+                clipper.AddPaths(PlotPth.GetDark(), PolyType.ptSubject, true);
+                clipper.AddPaths(PlotNpth.GetDark(), PolyType.ptSubject, true);
+                clipper.Execute(ClipType.ctUnion, paths, PolyFillType.pftPositive);
             }
             else
             {
@@ -74,11 +75,11 @@ internal class NCDrill : NCDrillBase
             paths = PlotNpth.GetDark();
         }
 
-        paths = Clipper.ReversePaths(paths);
+        Clipper.ReversePaths(paths);
         return paths;
     }
 
-    protected override void AddArc(Point64 start, Point64 end, long radius, bool ccw)
+    protected override void AddArc(IntPoint start, IntPoint end, long radius, bool ccw)
     {
         double x0 = start.X;
         double y0 = start.Y;
@@ -112,7 +113,7 @@ internal class NCDrill : NCDrillBase
             double va = f0 * a0 + f1 * a1;
             double vx = xc + r * Math.Cos(va);
             double vy = yc + r * Math.Sin(va);
-            Path.Add(new Point64((long)Math.Round(vx), (long)Math.Round(vy)));
+            Path.Add(new IntPoint((long)Math.Round(vx), (long)Math.Round(vy)));
         }
     }
 
@@ -326,7 +327,7 @@ internal class NCDrill : NCDrillBase
 
     protected override void CommitPath()
     {
-        Paths64 point64s = new Paths64();
+        Polygons point64s = new();
         point64s.Add(Path);
 
         if (Tool == null)
@@ -337,7 +338,7 @@ internal class NCDrill : NCDrillBase
         if (Tool.plated)
         {
             PlotPth.DrawPaths(point64s.Render(Tool.diameter, false, fmt.BuildClipperOffset()));
-            Vias.Add(new Via(new Path64(Path), Tool.diameter));
+            Vias.Add(new Via(new Polygon(Path), Tool.diameter));
         }
         else
         {

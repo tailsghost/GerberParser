@@ -1,4 +1,4 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 
 namespace GerberParser.Property.Net;
 
@@ -40,7 +40,7 @@ public class PhysicalNet
         }
     }
 
-    public bool Contains(Point64 point, int layer)
+    public bool Contains(IntPoint point, int layer)
     {
         return shapes.Any(shape => shape.layer == layer && shape.Contains(point));
     }

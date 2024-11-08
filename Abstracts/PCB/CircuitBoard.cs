@@ -1,29 +1,31 @@
-﻿using Clipper2Lib;
-using GerberParser.Constants;
+﻿using GerberParser.Constants;
 using GerberParser.Core.Coord;
 using GerberParser.Core.NETLIST;
 using GerberParser.Property.Net;
 using GerberParser.Property.PCB;
 using System.Text;
 
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using ClipperLib;
+
 namespace GerberParser.Abstracts.PCB;
 
 public abstract class CircuitBoardBase
 {
     protected ConcreteFormat Format = new();
-    public Paths64 BoardOutLine { get; protected set; } = new();
+    public Polygons BoardOutLine { get; protected set; } = new();
 
-    public Paths64 BoardShape { get; protected set; } = new();
+    public Polygons BoardShape { get; protected set; } = new();
 
-    public Paths64 BoardShapeExclPth { get; protected set; } = new();
+    public Polygons BoardShapeExclPth { get; protected set; } = new();
 
-    public Paths64 SubstrateDielectric { get; protected set; } = new();
+    public Polygons SubstrateDielectric { get; protected set; } = new();
 
-    public Paths64 SubstratePlating { get; protected set; } = new();
+    public Polygons SubstratePlating { get; protected set; } = new();
 
-    public Paths64 BottomFinish { get; set; } = new();
+    public Polygons BottomFinish { get; set; } = new();
 
-    public Paths64 TopFinish { get; set; } = new();
+    public Polygons TopFinish { get; set; } = new();
 
     public List<Property.Drill.Via> Vias { get; protected set; } = new();
 
@@ -44,9 +46,9 @@ public abstract class CircuitBoardBase
 
     public abstract StringReader Read_File(string buffer);
 
-    public abstract Paths64 Read_Gerber(string fname, bool outline = false);
+    public abstract Polygons Read_Gerber(string fname, bool outline = false);
 
-    public abstract void Read_Drill(string fname, bool plated,ref Paths64 pth,ref Paths64 npth);
+    public abstract void Read_Drill(string fname, bool plated,ref Polygons pth,ref Polygons npth);
 
     public abstract void GenerateMtlFile(StringBuilder sb);
 
@@ -64,7 +66,7 @@ public abstract class CircuitBoardBase
 
     public abstract PhysicalNetlist Get_physical_netlist();
 
-    public abstract Rect64 Get_Bounds();
+    public abstract IntRect Get_Bounds();
 
     public abstract string Get_svg(bool flipped, ColorScheme colors, StringBuilder sb, string id_prefix = "");
 

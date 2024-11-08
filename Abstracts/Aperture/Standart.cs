@@ -1,8 +1,10 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.APERTURE;
-using GerberParser.Abstracts.Coord;
+﻿using GerberParser.Abstracts.APERTURE;
 using GerberParser.Core.ClipperPath;
 using GerberParser.Core.Coord;
+using ClipperLib;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 namespace GerberParser.Abstracts.Aperture;
 
@@ -10,20 +12,20 @@ public abstract class Standard : Base
 {
     protected long? HoleDiameter;
 
-    protected List<Path64> GetHole(ConcreteFormat format)
+    protected Polygons GetHole(ConcreteFormat format)
     {
 
         if (HoleDiameter <= 0.0)
         {
-            return new Paths64(); 
+            return new Polygons(); 
         }
 
-        var holePath = new Path64
+        var holePath = new Polygon
         {
-            new Point64(0, 0)
+            new IntPoint(0, 0)
         };
 
-        var paths = new Paths64 { holePath }.Render((double)HoleDiameter, 
+        var paths = new Polygons { holePath }.Render((double)HoleDiameter, 
             false, format.BuildClipperOffset());
 
         Clipper.ReversePaths(paths);

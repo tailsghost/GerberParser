@@ -1,9 +1,12 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 using GerberParser.Enums;
 using GerberParser.Property;
 using GerberParser.Property.Drill;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 namespace GerberParser.Abstracts.NcDrill;
 
@@ -22,9 +25,9 @@ public abstract class NCDrillBase
 
     protected RoutMode RoutMode;
 
-    protected Point64 Pos;
+    protected IntPoint Pos;
 
-    protected Path64 Path = new();
+    protected Polygon Path = new();
 
     protected Plot PlotPth = new();
 
@@ -32,10 +35,10 @@ public abstract class NCDrillBase
 
     protected List<Via> Vias = new();
     protected abstract void CommitPath();
-    protected abstract void AddArc(Point64 start, Point64 end, long radius, bool ccw);
+    protected abstract void AddArc(IntPoint start, IntPoint end, long radius, bool ccw);
     protected abstract Dictionary<char, string> ParseRegularCommand(string cmd);
     protected abstract bool Command(string cmd);
-    public abstract Paths64 GetPaths(bool plated = true, bool unplated = true);
+    public abstract Polygons GetPaths(bool plated = true, bool unplated = true);
     public List<Via> GetVias()
     {
         return Vias;

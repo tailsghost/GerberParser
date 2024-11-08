@@ -1,17 +1,16 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.PCB;
+﻿namespace GerberParser.Property.Net;
 
-namespace GerberParser.Property.Net;
+using ClipperLib;
 
 public class ConnectionPoint
 {
-    public Point64 coordinate { get; }
+    public IntPoint coordinate { get; }
 
     public int layer { get; }
 
     public LogicalNet LogicalNet { get; }
 
-    public ConnectionPoint(Point64 coordinate, int layer, LogicalNet net)
+    public ConnectionPoint(IntPoint coordinate, int layer, LogicalNet net)
     {
         this.layer = layer;
         this.coordinate = coordinate;

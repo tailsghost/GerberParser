@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Clipper2" Version="1.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17" />
+    <PackageReference Include="ParagonClipper" Version="6.4.2" />
   </ItemGroup>
 
 </Project>

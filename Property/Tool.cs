@@ -1,6 +1,7 @@
 ﻿namespace GerberParser.Property;
 
 public class Tool
+
 {
     public long diameter { get; }
 

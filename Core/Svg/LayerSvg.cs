@@ -1,9 +1,11 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.SVG;
+﻿using GerberParser.Abstracts.SVG;
 using GerberParser.Constants;
 using GerberParser.Core.Coord;
 
 namespace GerberParser.Core.Svg;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 public class LayerSvg : LayerSvgBase
 {
@@ -13,7 +15,7 @@ public class LayerSvg : LayerSvgBase
         Data.Append($"<g id=\"{identifier}\" {attr}>\n");
     }
 
-    public override void Add(Paths64 paths, Color? color, AttributesBase attr = null)
+    public override void Add(Polygons paths, Color? color, AttributesBase attr = null)
     {
         if (color.Value.A == 0.0) return;
 

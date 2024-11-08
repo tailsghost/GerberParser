@@ -1,10 +1,13 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.GERBER;
+﻿using GerberParser.Abstracts.GERBER;
 using GerberParser.Core.Aperture;
 using GerberParser.Core.ClipperPath;
 using GerberParser.Core.PlotCore;
 using GerberParser.Enums;
 using GerberParser.Helpers;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using ClipperLib;
 
 namespace GerberParser.Core.GERBER;
 
@@ -14,7 +17,7 @@ public class Gerber : GerberBase
     {
     }
 
-    public override Paths64 GetOutlinePaths()
+    public override Polygons GetOutlinePaths()
     {
         //Метод полностью протестирован, на 100% работает!!!
 
@@ -64,7 +67,7 @@ public class Gerber : GerberBase
             endPoints.Add(endpts);
         }
 
-        var paths = new Paths64();
+        var paths = new Polygons();
 
         while (points.Count > 0)
         {
@@ -76,7 +79,7 @@ public class Gerber : GerberBase
             }
 
             bool isLoop = true;
-            var path = new Path64();
+            var path = new Polygon();
             int startIdx = cur.First();
             int curIdx = cur.Last();
 
@@ -115,14 +118,16 @@ public class Gerber : GerberBase
 
             if (isLoop)
             {
+                var pathsPoly = new Polygons();
+                pathsPoly.Add(path);
                 if (Clipper.Area(path) < 0)
                 {
-                    path = Clipper.ReversePath(path);
+                    Clipper.ReversePaths(pathsPoly);
                 }
-                paths.Add(path);
+                paths.Add(pathsPoly[0]);
             }
         }
-        paths = paths.SimplifyPolygons();
+        paths = Clipper.SimplifyPolygons(paths);
 
         OutlineConstructed = true;
         Outlines = paths;
@@ -130,7 +135,7 @@ public class Gerber : GerberBase
     }
 
 
-    public override Paths64 GetPaths()
+    public override Polygons GetPaths()
     {
         var resultPeek = PlotStack.Peek();
         var result = resultPeek.GetDark();
@@ -219,7 +224,7 @@ public class Gerber : GerberBase
                         Apertures[index] = new Obround(csep, fmt);
                         break;
                     case "P":
-                        Apertures[index] = new Polygon(csep, fmt);
+                        Apertures[index] = new Aperture.Polygon(csep, fmt);
                         break;
                     default:
                         if (!ApertureMacros.TryGetValue(csep[0], out var macro))
@@ -364,7 +369,7 @@ public class Gerber : GerberBase
                 switch (d)
                 {
                     case 1:
-                        Interpolate(new Point64 { X = parameters['X'], Y = parameters['Y'] }, new Point64 { X = parameters['I'], Y = parameters['J'] });
+                        Interpolate(new IntPoint { X = parameters['X'], Y = parameters['Y'] }, new IntPoint { X = parameters['I'], Y = parameters['J'] });
                         Pos.X = parameters['X'];
                         Pos.Y = parameters['Y'];
                         break;
@@ -433,7 +438,7 @@ public class Gerber : GerberBase
             RegionAccum.Reverse();
         }
 
-        PlotStack.Peek().DrawPaths(new List<Path64> { RegionAccum }, Polarity);
+        PlotStack.Peek().DrawPaths(new Polygons { RegionAccum }, Polarity);
         RegionAccum.Clear();
     }
 
@@ -452,9 +457,9 @@ public class Gerber : GerberBase
         AmBuilder = null;
     }
 
-    protected override void Interpolate(Point64 dest, Point64 center)
+    protected override void Interpolate(IntPoint dest, IntPoint center)
     {
-        Path64 path;
+        Polygon path;
 
         if (imode == InterpolationMode.UNDEFINED)
         {
@@ -462,7 +467,7 @@ public class Gerber : GerberBase
         }
         else if (imode == InterpolationMode.LINEAR)
         {
-            path = new Path64 { Pos, dest };
+            path = new Polygon { Pos, dest };
         }
         else
         {
@@ -476,7 +481,7 @@ public class Gerber : GerberBase
             }
             else if (qmode == QuadrantMode.MULTI)
             {
-                h = new CircularInterpolationHelper(Pos, dest, new Point64(Pos.X + center.X, Pos.Y + center.Y), ccw, true);
+                h = new CircularInterpolationHelper(Pos, dest, new IntPoint(Pos.X + center.X, Pos.Y + center.Y), ccw, true);
             }
             else
             {
@@ -484,7 +489,7 @@ public class Gerber : GerberBase
                 {
                     var h2 = new CircularInterpolationHelper(
                         Pos, dest,
-                        new Point64(
+                        new IntPoint(
                             Pos.X + ((k & 1) == 1 ? center.X : -center.X),
                             Pos.Y + ((k & 2) == 2 ? center.Y : -center.Y)
                         ),
@@ -531,7 +536,7 @@ public class Gerber : GerberBase
         double thickness = (double)(diameter * apScale);
         if (thickness == 0) return;
 
-        Paths64 paths = new Paths64 { path }.Render(thickness, false, fmt.BuildClipperOffset());
+        Polygons paths = new Polygons { path }.Render(thickness, false, fmt.BuildClipperOffset());
         PlotStack.Peek().DrawPaths(paths, Polarity);
     }
 }

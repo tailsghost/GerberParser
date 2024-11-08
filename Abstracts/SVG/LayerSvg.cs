@@ -1,10 +1,10 @@
-﻿using Clipper2Lib;
-using GerberParser.Constants;
-using GerberParser.Core.Coord;
+﻿using GerberParser.Constants;
 using GerberParser.Core.Svg;
 using System.Text;
 
 namespace GerberParser.Abstracts.SVG;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 
 public abstract class LayerSvgBase
 {
@@ -20,7 +20,7 @@ public abstract class LayerSvgBase
 
     protected StringBuilder Data = new();
 
-    public abstract void Add(Paths64 paths, Color? color, AttributesBase attr = null);
+    public abstract void Add(Polygons paths, Color? color, AttributesBase attr = null);
 
     public abstract void Add(string svgData);
 

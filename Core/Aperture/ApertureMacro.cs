@@ -1,4 +1,4 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 using GerberParser.Abstracts.Aperture;
 using GerberParser.Abstracts.APERTURE;
 using GerberParser.Core.ClipperPath;
@@ -6,6 +6,9 @@ using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using PolygonClip = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 public class ApertureMacro : ApertureMacroBase
 {
@@ -86,9 +89,9 @@ public class ApertureMacro : ApertureMacroBase
         double centerY = cmd[4].Eval(vars);
         double rotation = cmd.Count > 5 ? cmd[5].Eval(vars) : 0;
 
-        var paths = new Paths64
+        var paths = new Polygons
         {
-            new Path64 { new Point64(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
+            new PolygonClip { new IntPoint(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
         }.Render(fmt.ToFixed(diameter), false, fmt.BuildClipperOffset());
 
         plot.DrawPaths(paths, exposure, 0,0,false,false, rotation/ (180*Math.PI));
@@ -108,12 +111,12 @@ public class ApertureMacro : ApertureMacroBase
         double endY = cmd[6].Eval(vars);
         double rotation = cmd.Count > 7 ? cmd[7].Eval(vars) : 0;
 
-        var paths = new Paths64
+        var paths = new Polygons
         {
-            new Path64
+            new PolygonClip
             {
-                new Point64(fmt.ToFixed(startX), fmt.ToFixed(startY)),
-                new Point64(fmt.ToFixed(endX), fmt.ToFixed(endY))
+                new IntPoint(fmt.ToFixed(startX), fmt.ToFixed(startY)),
+                new IntPoint(fmt.ToFixed(endX), fmt.ToFixed(endY))
             }
         }.Render(fmt.ToFixed(width), true, fmt.BuildClipperOffset());
 
@@ -132,14 +135,14 @@ public class ApertureMacro : ApertureMacroBase
         double centerY = cmd[5].Eval(vars);
         double rotation = cmd.Count > 6 ? cmd[6].Eval(vars) : 0;
 
-        var paths = new Paths64
+        var paths = new Polygons
         {
-            new Path64
+            new PolygonClip
             {
-                new Point64(fmt.ToFixed(centerX + width * 0.5), fmt.ToFixed(centerY + height * 0.5)),
-                new Point64(fmt.ToFixed(centerX - width * 0.5), fmt.ToFixed(centerY + height * 0.5)),
-                new Point64(fmt.ToFixed(centerX - width * 0.5), fmt.ToFixed(centerY - height * 0.5)),
-                new Point64(fmt.ToFixed(centerX + width * 0.5), fmt.ToFixed(centerY - height * 0.5))
+                new IntPoint(fmt.ToFixed(centerX + width * 0.5), fmt.ToFixed(centerY + height * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX - width * 0.5), fmt.ToFixed(centerY + height * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX - width * 0.5), fmt.ToFixed(centerY - height * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX + width * 0.5), fmt.ToFixed(centerY - height * 0.5))
             }
         };
 
@@ -160,16 +163,16 @@ public class ApertureMacro : ApertureMacroBase
         if (nVertices < 3 || cmd.Count() < rotationIndex || cmd.Count() > rotationIndex + 1)
             throw new ArgumentException("Invalid outline command in aperture macro");
 
-        var paths = new Paths64();
+        var paths = new Polygons();
 
         for (int i = 0; i < nVertices; i++)
         {
             double x = fmt.ToFixed(cmd[3 + 2 * i].Eval(vars));
             double y = fmt.ToFixed(cmd[4 + 2 * i].Eval(vars));
-            paths.Add(new Path64 { new Point64(x, y) });
+            paths.Add(new PolygonClip { new IntPoint(x, y) });
         }
 
-        plot.DrawPaths(paths, exposure, 0,0,false,false,rotation / (180 * Math.PI), 1.0, true, FillRule.NonZero);
+        plot.DrawPaths(paths, exposure, 0,0,false,false,rotation / (180 * Math.PI), 1.0, true, PolyFillType.pftNonZero);
     }
 
     private void HandlePolygon(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
@@ -185,14 +188,14 @@ public class ApertureMacro : ApertureMacroBase
         double diameter = Math.Abs(cmd[5].Eval(vars));
         double rotation = cmd.Count > 6 ? cmd[6].Eval(vars) : 0;
 
-        var paths = new Paths64();
+        var paths = new Polygons();
 
         for (int i = 0; i < nVertices; i++)
         {
             double angle = ((double)i / nVertices) * 2.0 * Math.PI;
             double x = centerX + diameter * 0.5 * Math.Cos(angle);
             double y = centerY + diameter * 0.5 * Math.Sin(angle);
-            paths.Add(new Path64 { new Point64(fmt.ToFixed(x), fmt.ToFixed(y))});
+            paths.Add(new PolygonClip { new IntPoint(fmt.ToFixed(x), fmt.ToFixed(y))});
         }
 
         plot.DrawPaths(paths, exposure, 0,0,false,false,rotation/(180*Math.PI));
@@ -214,13 +217,13 @@ public class ApertureMacro : ApertureMacroBase
         double chLength = Math.Abs(cmd[8].Eval(vars));
         double rotation = cmd.Count > 9 ? cmd[9].Eval(vars) : 0;
 
-        var paths = new Paths64();
+        var paths = new Polygons();
 
         for (int i = 0; i < maxRings * 2 && diameter > 0.0; i++)
         {
-            var circlePaths = new Paths64
+            var circlePaths = new Polygons
             {
-                new Path64 { new Point64(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
+                new PolygonClip { new IntPoint(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
             }.Render(fmt.ToFixed(diameter), false, fmt.BuildClipperOffset());
 
             if (i % 2 != 0)
@@ -238,25 +241,25 @@ public class ApertureMacro : ApertureMacroBase
 
         if (chThickness > 0.0 && chLength > 0.0)
         {
-            paths.Add(new Path64
+            paths.Add(new PolygonClip
             {
-                new Point64(fmt.ToFixed(centerX + chThickness * 0.5), fmt.ToFixed(centerY + chLength * 0.5)),
-                new Point64(fmt.ToFixed(centerX - chThickness * 0.5), fmt.ToFixed(centerY + chLength * 0.5)),
-                new Point64(fmt.ToFixed(centerX - chThickness * 0.5), fmt.ToFixed(centerY - chLength * 0.5)),
-                new Point64(fmt.ToFixed(centerX + chThickness * 0.5), fmt.ToFixed(centerY - chLength * 0.5))
+                new IntPoint(fmt.ToFixed(centerX + chThickness * 0.5), fmt.ToFixed(centerY + chLength * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX - chThickness * 0.5), fmt.ToFixed(centerY + chLength * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX - chThickness * 0.5), fmt.ToFixed(centerY - chLength * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX + chThickness * 0.5), fmt.ToFixed(centerY - chLength * 0.5))
             });
 
-            paths.Add(new Path64
+            paths.Add(new PolygonClip
             {
-                new Point64(fmt.ToFixed(centerX + chLength * 0.5), fmt.ToFixed(centerY + chThickness * 0.5)),
-                new Point64(fmt.ToFixed(centerX - chLength * 0.5), fmt.ToFixed(centerY + chThickness * 0.5)),
-                new Point64(fmt.ToFixed(centerX - chLength * 0.5), fmt.ToFixed(centerY - chThickness * 0.5)),
-                new Point64(fmt.ToFixed(centerX + chLength * 0.5), fmt.ToFixed(centerY - chThickness * 0.5))
+                new IntPoint(fmt.ToFixed(centerX + chLength * 0.5), fmt.ToFixed(centerY + chThickness * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX - chLength * 0.5), fmt.ToFixed(centerY + chThickness * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX - chLength * 0.5), fmt.ToFixed(centerY - chThickness * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX + chLength * 0.5), fmt.ToFixed(centerY - chThickness * 0.5))
             });
         }
 
         //Возможно NonZero
-        plot.DrawPaths(paths, true, 0,0,false,false,rotation/(180*Math.PI), 1.0, true, FillRule.Positive);
+        plot.DrawPaths(paths, true, 0,0,false,false,rotation/(180*Math.PI), 1.0, true, PolyFillType.pftPositive);
     }
 
     private void HandleThermal(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
@@ -271,14 +274,14 @@ public class ApertureMacro : ApertureMacroBase
         double gap = Math.Abs(cmd[5].Eval(vars));
         double rotation = cmd.Count > 6 ? cmd[6].Eval(vars) : 0;
 
-        var paths = new Paths64
+        var paths = new Polygons
         {
-            new Path64 { new Point64(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
+            new PolygonClip { new IntPoint(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
         }.Render(fmt.ToFixed(outer), false, fmt.BuildClipperOffset());
 
-        var innerPaths = new Paths64
+        var innerPaths = new Polygons
         {
-            new Path64 { new Point64(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
+            new PolygonClip { new IntPoint(fmt.ToFixed(centerX), fmt.ToFixed(centerY)) }
         }.Render(fmt.ToFixed(inner), false, fmt.BuildClipperOffset());
 
         innerPaths.Reverse();
@@ -286,23 +289,23 @@ public class ApertureMacro : ApertureMacroBase
 
         if(gap>0.0)
         {
-            paths.Add(new Path64
+            paths.Add(new PolygonClip
             {
-                new Point64(fmt.ToFixed(centerX + gap * 0.5), fmt.ToFixed(centerY + outer * 0.5)),
-                new Point64(fmt.ToFixed(centerY + gap * 0.5), fmt.ToFixed(centerY - outer * 0.5)),
-                new Point64(fmt.ToFixed(centerY - gap * 0.5), fmt.ToFixed(centerY - outer * 0.5)),
-                new Point64(fmt.ToFixed(centerY - gap * 0.5), fmt.ToFixed(centerY + outer * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX + gap * 0.5), fmt.ToFixed(centerY + outer * 0.5)),
+                new IntPoint(fmt.ToFixed(centerY + gap * 0.5), fmt.ToFixed(centerY - outer * 0.5)),
+                new IntPoint(fmt.ToFixed(centerY - gap * 0.5), fmt.ToFixed(centerY - outer * 0.5)),
+                new IntPoint(fmt.ToFixed(centerY - gap * 0.5), fmt.ToFixed(centerY + outer * 0.5)),
             });
-            paths.Add(new Path64
+            paths.Add(new PolygonClip
             {
-                new Point64(fmt.ToFixed(centerX + outer * 0.5), fmt.ToFixed(centerY + gap * 0.5)),
-                new Point64(fmt.ToFixed(centerX + outer * 0.5), fmt.ToFixed(centerY - gap * 0.5)),
-                new Point64(fmt.ToFixed(centerX - outer * 0.5), fmt.ToFixed(centerY - gap * 0.5)),
-                new Point64(fmt.ToFixed(centerX - outer * 0.5), fmt.ToFixed(centerY + gap * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX + outer * 0.5), fmt.ToFixed(centerY + gap * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX + outer * 0.5), fmt.ToFixed(centerY - gap * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX - outer * 0.5), fmt.ToFixed(centerY - gap * 0.5)),
+                new IntPoint(fmt.ToFixed(centerX - outer * 0.5), fmt.ToFixed(centerY + gap * 0.5)),
             });
         }
 
         //Возможно NonZero
-        plot.DrawPaths(paths, true, 0,0,false,false,rotation/(180*Math.PI),1.0, true, FillRule.Positive);
+        plot.DrawPaths(paths, true, 0,0,false,false,rotation/(180*Math.PI),1.0, true, PolyFillType.pftPositive);
     }
 }

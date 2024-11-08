@@ -1,10 +1,13 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 using GerberParser.Abstracts.APERTURE;
 using GerberParser.Core.Aperture;
 using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 using GerberParser.Enums;
 using System.Text;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 namespace GerberParser.Abstracts.GERBER;
 
@@ -26,7 +29,7 @@ public abstract class GerberBase
 
     protected Base Aperture;
 
-    protected Point64 Pos;
+    protected IntPoint Pos;
 
     protected bool Polarity;
 
@@ -40,15 +43,15 @@ public abstract class GerberBase
 
     protected bool RegionMode;
 
-    protected Path64 RegionAccum = new();
+    protected Polygon RegionAccum = new();
 
-    protected Paths64 Outlines = new();
+    protected Polygons Outlines = new();
 
     protected bool OutlineConstructed;
 
     protected abstract void DrawAperture();
 
-    protected abstract void Interpolate(Point64 dest, Point64 center);
+    protected abstract void Interpolate(IntPoint dest, IntPoint center);
 
     protected abstract void CommitRegion();
 
@@ -60,7 +63,7 @@ public abstract class GerberBase
     {
         imode = InterpolationMode.UNDEFINED;
         qmode = QuadrantMode.UNDEFINED;
-        Pos = new Point64(0, 0);
+        Pos = new IntPoint(0, 0);
         Polarity = true;
         apMirrorX = false;
         apMirrorY = false;
@@ -121,6 +124,6 @@ public abstract class GerberBase
         }
     }
 
-    public abstract Paths64 GetPaths();
-    public abstract Paths64 GetOutlinePaths();
+    public abstract Polygons GetPaths();
+    public abstract Polygons GetOutlinePaths();
 }

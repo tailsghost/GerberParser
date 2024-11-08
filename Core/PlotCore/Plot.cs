@@ -1,18 +1,21 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.PLOT;
-using GerberParser.Core.ClipperPath;
+﻿using GerberParser.Abstracts.PLOT;
+
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using ClipperLib;
 
 namespace GerberParser.Core.PlotCore;
 
 public class Plot : PlotBase
 {
 
-    public Plot(Paths64 dark = null, Paths64 clear = null)
+    public Plot(Polygons dark = null, Polygons clear = null)
         : base(dark, clear)
     {   
     }
 
-    public override void DrawPaths(List<Path64> paths, bool polarity = true)
+    public override void DrawPaths(Polygons paths, bool polarity = true)
     {
         if (paths.Count == 0) return;
 
@@ -22,7 +25,9 @@ public class Plot : PlotBase
         AccumPaths.AddRange(paths);
     }
 
-    public override void DrawPaths(List<Path64> paths, bool polarity, double translateX, double translateY = 0, bool mirrorX = false, bool mirrorY = false, double rotate = 0, double scale = 1, bool specialFillType = false, FillRule fillRule = FillRule.NonZero)
+    public override void DrawPaths(Polygons paths, bool polarity, double translateX, double translateY = 0,
+        bool mirrorX = false, bool mirrorY = false, double rotate = 0, double scale = 1,
+        bool specialFillType = false, PolyFillType fillType = PolyFillType.pftNonZero)
     {
         if (paths.Count == 0) return;
 
@@ -48,7 +53,7 @@ public class Plot : PlotBase
                 var c = path[j];
                 long cx = (long)(Math.Round(c.X * xx + c.Y * yx) + translateX);
                 long cy = (long)(Math.Round(c.X * xy + c.Y * yy) + translateY);
-                path[j] = new Point64(cx, cy);
+                path[j] = new IntPoint(cx, cy);
             }
         }
 
@@ -60,7 +65,7 @@ public class Plot : PlotBase
             }
         }
 
-        if (specialFillType) CommitPaths(fillRule);
+        if (specialFillType) CommitPaths(fillType);
     }
 
     public override void DrawPlot(PlotBase plot, bool polarity = true, double translateX = 0, double translateY = 0, bool mirrorX = false, bool mirrorY = false, double rotate = 0, double scale = 1)
@@ -69,53 +74,46 @@ public class Plot : PlotBase
         DrawPaths(plot.GetClear(), !polarity, translateX, translateY, mirrorX, mirrorY, rotate, scale);
     }
 
-    public override List<Path64> GetClear()
+    public override Polygons GetClear()
     {
         CommitPaths();
         Simplify();
         return Clear;
     }
 
-    public override Paths64 GetDark()
+    public override Polygons GetDark()
     {
         CommitPaths();
         Simplify();
         return Dark;
     }
 
-    protected override void CommitPaths(FillRule fillRule = FillRule.NonZero)
+    protected override void CommitPaths(PolyFillType fillType = PolyFillType.pftNonZero)
     {
         if (AccumPaths.Count == 0) return;
 
-        AccumPaths = AccumPaths.SimplifyPolygons(fillRule);
-        var cld = new Clipper64();
-        var clc = new Clipper64();
+        AccumPaths = Clipper.SimplifyPolygons(AccumPaths);
+        var cld = new Clipper();
+        var clc = new Clipper();
 
-        cld.AddOpenSubject(Dark);
-        clc.AddOpenSubject(Clear);
+        cld.AddPaths(Dark, PolyType.ptSubject, true);
+        clc.AddPaths(Clear, PolyType.ptSubject, true);
 
-        cld.AddClip(AccumPaths);
-        clc.AddClip(AccumPaths);
-
-        Paths64 darkSolutionClosed = new Paths64();
-        Paths64 darkSolutionOpen = new Paths64();
-        Paths64 clearSolutionClosed = new Paths64();
-        Paths64 clearSolutionOpen = new Paths64();
+        cld.AddPaths(AccumPaths, PolyType.ptClip, true);
+        clc.AddPaths(AccumPaths, PolyType.ptClip, true);
 
         if (AccumPolarity)
         {
-            cld.Execute(ClipType.Union, fillRule, darkSolutionClosed, darkSolutionOpen);
-            clc.Execute(ClipType.Difference, fillRule, clearSolutionClosed, clearSolutionOpen);
+            cld.Execute(ClipType.ctUnion, Dark, PolyFillType.pftNonZero, fillType);
+            clc.Execute(ClipType.ctDifference, Clear, PolyFillType.pftNonZero, fillType);
         }
         else
         {
-            cld.Execute(ClipType.Difference, fillRule, darkSolutionClosed, darkSolutionOpen);
-            clc.Execute(ClipType.Union, fillRule, clearSolutionClosed, clearSolutionOpen);
+            cld.Execute(ClipType.ctDifference, Dark, PolyFillType.pftNonZero, fillType);
+            clc.Execute(ClipType.ctUnion, Clear, PolyFillType.pftNonZero, fillType);
         }
 
         Simplified = false;
-        Dark = new Paths64(darkSolutionClosed.Distinct());
-        Clear = new Paths64(clearSolutionClosed.Distinct());
         AccumPaths.Clear();
     }
 
@@ -123,9 +121,8 @@ public class Plot : PlotBase
     {
         if (Simplified) return;
 
-        Dark = Dark.SimplifyPolygons(FillRule.NonZero);
-        Clear = Clear.SimplifyPolygons(FillRule.NonZero);
-
+        Dark = Clipper.SimplifyPolygons(Dark, PolyFillType.pftNonZero);
+        Clear = Clipper.SimplifyPolygons(Clear, PolyFillType.pftNonZero);
         Simplified = true;
     }
 }

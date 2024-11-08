@@ -1,19 +1,22 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 using GerberParser.Abstracts.PCB;
 using GerberParser.Abstracts.SVG;
 using GerberParser.Core.Coord;
 
 namespace GerberParser.Core.Svg;
 
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using PolygonClip = System.Collections.Generic.List<ClipperLib.IntPoint>;
+
 public class File : FileBase
 {
-    public File(StringWriter stream, Rect64 bounds, double scale)
+    public File(StringWriter stream, IntRect bounds, double scale)
     {
         StringWriter = stream;
         WriteSvgHeader(bounds, scale);
     }
 
-    private void WriteSvgHeader(Rect64 bounds, double scale)
+    private void WriteSvgHeader(IntRect bounds, double scale)
     {
         var minX = FormatHelper.ToMM(bounds.left);
         var minY = FormatHelper.ToMM(bounds.top);

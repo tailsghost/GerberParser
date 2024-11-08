@@ -1,9 +1,12 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 using GerberParser.Abstracts.Aperture;
 using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using PolygonClip = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 public class Rectangle : Standard
 {
@@ -22,14 +25,14 @@ public class Rectangle : Standard
         YSize = Math.Abs(fmt.ParseFloat(csep[2]));
         HoleDiameter = csep.Count > 3 ? fmt.ParseFloat(csep[3]) : 0;
 
-        Path64 rectangle = new Path64
+        var rectangle = new PolygonClip
         {
-            new Point64(XSize / 2, YSize / 2),
-            new Point64(XSize / 2, -YSize / 2),
-            new Point64(-XSize / 2, -YSize / 2),
-            new Point64(-XSize / 2, YSize / 2)
+            new IntPoint(XSize / 2, YSize / 2),
+            new IntPoint(XSize / 2, -YSize / 2),
+            new IntPoint(-XSize / 2, -YSize / 2),
+            new IntPoint(-XSize / 2, YSize / 2)
         };
-        var paths = new Paths64 { rectangle };
+        var paths = new Polygons { rectangle };
 
         if (HoleDiameter > 0)
         {

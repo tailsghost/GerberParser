@@ -1,5 +1,4 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.PCB;
+﻿using GerberParser.Abstracts.PCB;
 using GerberParser.Core.ClipperPath;
 using GerberParser.Core.OBJECT;
 using GerberParser.Core.Svg;
@@ -7,16 +6,19 @@ using GerberParser.Property.PCB;
 
 namespace GerberParser.Core.PCB;
 
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+
 public class MaskLayer : Layer
 {
-    public Paths64 Mask { get; } = new();
+    public Polygons Mask { get; } = new();
 
-    public Paths64 Silk { get; } = new();
+    public Polygons Silk { get; } = new();
 
     public bool Bottom { get; }
 
-    public MaskLayer(string name, Paths64 board_outline, Paths64 mask_layer,
-        Paths64 silk_layer, bool bottom) : base(name, 0.01) 
+    public MaskLayer(string name, Polygons board_outline, Polygons mask_layer,
+        Polygons silk_layer, bool bottom) : base(name, 0.01) 
     {
 
         Bottom = bottom;
@@ -24,7 +26,7 @@ public class MaskLayer : Layer
         Silk = Mask.Intersect(silk_layer);
     }
 
-    public override Paths64 GetMask()
+    public override Polygons GetMask()
         => Mask;
 
     public  override LayerSvg ToSvg(ColorScheme colors, bool flipped, string idPrefix)

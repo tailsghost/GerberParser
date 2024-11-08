@@ -1,26 +1,28 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.PCB;
+﻿using GerberParser.Abstracts.PCB;
 using GerberParser.Core.OBJECT;
 using GerberParser.Core.Svg;
 using GerberParser.Property.PCB;
 
 namespace GerberParser.Core.PCB;
 
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+
 public class SubstrateLayer : Layer
 {
-    public Paths64 Shape { get; }
-    public Paths64 Dielectric { get; init; }
-    public Paths64 Plating { get; }
+    public Polygons Shape { get; }
+    public Polygons Dielectric { get; init; }
+    public Polygons Plating { get; }
 
-    public SubstrateLayer(string name, Paths64 shape, Paths64 dielectric,
-        Paths64 plating, double thickness) : base(name, thickness)
+    public SubstrateLayer(string name, Polygons shape, Polygons dielectric,
+        Polygons plating, double thickness) : base(name, thickness)
     {
         Shape = shape;
         Dielectric = dielectric;
         Plating = plating;
     }
 
-    public override Paths64 GetMask()
+    public override Polygons GetMask()
         => Dielectric;
 
     public override LayerSvg ToSvg(ColorScheme colors, bool flipped, string idPrefix)

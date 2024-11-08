@@ -1,6 +1,8 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 
 namespace GerberParser.Property.Net;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 
 public class PhysicalNetlist
 {
@@ -17,18 +19,16 @@ public class PhysicalNetlist
         nets.Add(new PhysicalNet(shape));
     }
 
-    public void RegisterPaths(Paths64 paths, int layer)
+    public void RegisterPaths(Polygons paths, int layer)
     {
-        var clipper = new Clipper64();
-        clipper.AddSubject(paths);
+        var clipper = new Clipper();
+        clipper.StrictlySimple = true;
+        clipper.AddPaths(paths, PolyType.ptSubject, true);
 
-        Paths64 solution = new Paths64();
-        clipper.Execute(ClipType.Union, FillRule.NonZero, solution);
+        PolyTree tree = new();
+        clipper.Execute(ClipType.ctUnion, tree);
 
-        foreach (var path in solution)
-        {
-            RegisterShape(new Shape(path, new List<Path64>(), layer));
-        }
+        NodesToPhysicalNetlist(tree.Childs, layer);
     }
 
     public bool RegisterVia(Via via, int numLayers)
@@ -71,7 +71,7 @@ public class PhysicalNetlist
         return ok;
     }
 
-    public PhysicalNet FindNet(Point64 point, int layer)
+    public PhysicalNet FindNet(IntPoint point, int layer)
     {
         foreach (var net in nets)
         {
@@ -81,5 +81,28 @@ public class PhysicalNetlist
             }
         }
         return null;
+    }
+
+
+    private void NodesToPhysicalNetlist(List<PolyNode> nodes, int layer)
+    {
+        foreach(var node in nodes)
+        {
+            if (node.IsHole)
+                throw new ArgumentException("Shape is a hole?");
+
+            Polygons holes = new();
+
+            foreach(var hole in node.Childs)
+            {
+                if(!hole.IsHole)
+                    throw new ArgumentException("Hole is not a hole?");
+
+                holes.Add(hole.Contour);
+                NodesToPhysicalNetlist(hole.Childs, layer);
+            }
+
+            RegisterShape(new Shape(node.Contour, holes, layer));
+        }
     }
 }

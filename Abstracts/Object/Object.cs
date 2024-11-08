@@ -1,7 +1,10 @@
-﻿using Clipper2Lib;
-using GerberParser.Core.OBJECT;
+﻿using GerberParser.Core.OBJECT;
 using GerberParser.Property.Obj;
 using GerberParser.Vertex;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using ClipperLib;
 
 namespace GerberParser.Abstracts.Object;
 
@@ -15,7 +18,7 @@ public abstract class ObjectBase
         Material = material;
     }
 
-    public ObjFile Owner {  get; }
+    public ObjFile Owner { get; }
 
     public string Name { get; }
 
@@ -25,13 +28,15 @@ public abstract class ObjectBase
 
     public abstract void AddFace(List<Vertex3> vertices);
 
-    public abstract void AddSurface(Paths64 polygon, double z);
+    public abstract void AddSurface(Polygons polygons, double z);
 
-    public abstract void AddSurface(Path64 polygon, Paths64 holes, double z);
+    public abstract void AddSurface(Polygon polygon, Polygons holes, double z);
 
-    public abstract void AddRing(Path64 outline, double z1, double z2);
+    public abstract void AddRing(Polygon outline, double z1, double z2);
 
-    public abstract void AddSheet(Paths64 polygons, double z1, double z2);
+    public abstract void AddSheet(Polygons polygons, double z1, double z2);
 
-    public abstract void PolyNodesToSurfaces(PolyTree64 rootNode, double z);
+    public abstract void PolyNodesToSurfaces(List<PolyNode> nodes, double z);
+
+    public abstract void PolyNodesToRings(List<PolyNode> nodes, double z1, double z2);
 }

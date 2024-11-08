@@ -1,5 +1,4 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.PCB;
+﻿using GerberParser.Abstracts.PCB;
 using GerberParser.Constants;
 using GerberParser.Core.ClipperPath;
 using GerberParser.Core.Coord;
@@ -12,6 +11,10 @@ using GerberParser.Property.Net;
 using GerberParser.Property.PCB;
 using System.Text;
 
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using ClipperLib;
+
 namespace GerberParser.Core.PCB;
 
 public class CircuitBoard : CircuitBoardBase
@@ -20,7 +23,7 @@ public class CircuitBoard : CircuitBoardBase
     {
         PlatingThickness = FormatHelper.FromMM(0.5 * COPPER_OZ.Value);
         BoardOutLine = Read_Gerber(outline, true);
-        Paths64 pth = new(), npth = new();
+        Polygons pth = new(), npth = new();
         BoardOutLine.AddRange(Read_Gerber("", true));
 
         foreach (var drillFile in drill)
@@ -32,12 +35,14 @@ public class CircuitBoard : CircuitBoardBase
             }
         }
 
-        var holes = pth.Add(pth);
-        holes.Add(npth);
+        Polygons holes = new();
+        holes.AddRange(pth);
+        holes.AddRange(npth);
         BoardShape = BoardOutLine.Subtract(holes);
         BoardShapeExclPth = BoardOutLine.Subtract(npth);
 
-        var pthDrill = pth.Offset(plating_thickness, true);
+        //Проверить Format.BuildClipperOffset()
+        var pthDrill = pth.Offset(FormatHelper.FromMM(plating_thickness), true, Format.BuildClipperOffset());
         SubstrateDielectric = BoardOutLine.Subtract(pthDrill.Add(npth));
         SubstratePlating = pthDrill.Subtract(pth);
     }
@@ -65,7 +70,7 @@ public class CircuitBoard : CircuitBoardBase
 
     public override void Add_surface_finish()
     {
-        Paths64 mask = new Paths64();
+        Polygons mask = new ();
 
         foreach (var layer in Layers)
         {
@@ -95,9 +100,9 @@ public class CircuitBoard : CircuitBoardBase
         throw new NotImplementedException();
     }
 
-    public override Rect64 Get_Bounds()
+    public override IntRect Get_Bounds()
     {
-        var bounds = new Rect64
+        var bounds = new IntRect
         {
             left = long.MaxValue,
             bottom = long.MaxValue,
@@ -185,7 +190,7 @@ public class CircuitBoard : CircuitBoardBase
         return sb.ToString();
     }
 
-    public override void Read_Drill(string fname, bool plated, ref Paths64 pth, ref Paths64 npth)
+    public override void Read_Drill(string fname, bool plated, ref Polygons pth, ref Polygons npth)
     {
         if (string.IsNullOrEmpty(fname)) return;
 
@@ -198,7 +203,7 @@ public class CircuitBoard : CircuitBoardBase
         else
         {
             pth.AddRange(l);
-            pth = pth.SimplifyPolygons();
+            pth = Clipper.SimplifyPolygons(pth);
         }
 
         l = d.GetPaths(false, true);
@@ -208,7 +213,7 @@ public class CircuitBoard : CircuitBoardBase
         else
         {
             npth.AddRange(l);
-            npth = npth.SimplifyPolygons();
+            npth = Clipper.SimplifyPolygons(npth);
         }
 
         Vias.AddRange(d.GetVias());
@@ -219,9 +224,9 @@ public class CircuitBoard : CircuitBoardBase
         return new StringReader(buffer);
     }
 
-    public override Paths64 Read_Gerber(string fname, bool outline = false)
+    public override Polygons Read_Gerber(string fname, bool outline = false)
     {
-        if (string.IsNullOrEmpty(fname)) return new Paths64();
+        if (string.IsNullOrEmpty(fname)) return new Polygons();
 
         var f = new StringReader(fname);
         var g = new Gerber(f);
@@ -292,7 +297,7 @@ public class CircuitBoard : CircuitBoardBase
 
 
 
-    private void RenderCircle(Point64 center, long diameter, Path64 output)
+    private void RenderCircle(IntPoint center, long diameter, Polygon output)
     {
         double epsilon = Format.GetMaxDeviation();
         double r = diameter * 0.5;
@@ -309,7 +314,7 @@ public class CircuitBoard : CircuitBoardBase
             double a = 2.0 * Math.PI * i / nVertices;
             long xPos = (long)Math.Round(Math.Cos(a) * r);
             long yPos = (long)Math.Round(Math.Sin(a) * r);
-            output.Add(new Point64(center.X + xPos, center.Y + yPos));
+            output.Add(new IntPoint(center.X + xPos, center.Y + yPos));
         }
     }
 
@@ -335,11 +340,11 @@ public class CircuitBoard : CircuitBoardBase
                 int lowerLayer = via.GetLowerLayer(copperZ.Count);
                 int upperLayer = via.GetUpperLayer(copperZ.Count);
 
-                var inner = new Path64();
+                var inner = new Polygon();
                 RenderCircle(center, diameter, inner);
                 ob.AddRing(inner, copperZ[lowerLayer].Item1, copperZ[upperLayer].Item2);
 
-                var outer = new Path64();
+                var outer = new Polygon();
                 RenderCircle(center, diameter + 2 * via.platingThickness, outer);
                 for (int layer = lowerLayer; layer < upperLayer; layer++)
                 {
@@ -364,7 +369,7 @@ public class CircuitBoard : CircuitBoardBase
                 {
                     double z = side == 1 ? zs.Item2 : zs.Item1;
 
-                    var holes = new Paths64(shape.holes);
+                    var holes = new Polygons(shape.holes);
                     foreach (var via in vias)
                     {
                         if (layer < via.lower_layer || layer > via.upper_layer || !shape.Contains(via.center))
@@ -382,13 +387,13 @@ public class CircuitBoard : CircuitBoardBase
 
     private struct Via
     {
-        public Point64 center { get; }
-        public Path64 inner { get; }
-        public Path64 outer { get; }
+        public IntPoint center { get; }
+        public Polygon inner { get; }
+        public Polygon outer { get; }
         public int lower_layer { get; }
         public int upper_layer{ get; }
 
-        public Via(Point64 center, Path64 inner, Path64 outer, int lower_layer, int upper_layer)
+        public Via(IntPoint center, Polygon inner, Polygon outer, int lower_layer, int upper_layer)
         {
             this.center = center;
             this.inner = inner;

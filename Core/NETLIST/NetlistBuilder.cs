@@ -1,10 +1,13 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 using GerberParser.Abstracts.NetList;
 using GerberParser.Core.ClipperPath;
 using GerberParser.Core.Coord;
 using GerberParser.Property.Net;
 
 namespace GerberParser.Core.NETLIST;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 public class NetlistBuilder : NetlistBuilderBase
 {
@@ -17,7 +20,7 @@ public class NetlistBuilder : NetlistBuilderBase
         foreach (var paths in Layers)
         {
             nl.connectedNetlist.RegisterPaths(paths, nl.numLayers);
-            var extendedPaths = paths.Offset((double)clearance / 2, false);
+            var extendedPaths = paths.Offset((double)clearance / 2, false, new ConcreteFormat().BuildClipperOffset());
             nl.clearanceNetlist.RegisterPaths(extendedPaths, nl.numLayers);
             nl.numLayers++;
         }
@@ -63,13 +66,13 @@ public class NetlistBuilder : NetlistBuilderBase
         return nl;
     }
 
-    public override NetlistBuilderBase Layer(Paths64 paths)
+    public override NetlistBuilderBase Layer(Polygons paths)
     {
         Layers.Add(paths);
         return this;
     }
 
-    public override NetlistBuilderBase Net(Point64 point, int layer, string net_name)
+    public override NetlistBuilderBase Net(IntPoint point, int layer, string net_name)
     {
         if (!LogicalNets.TryGetValue(net_name, out var logicalNet))
         {
@@ -80,7 +83,7 @@ public class NetlistBuilder : NetlistBuilderBase
         return this;
     }
 
-    public override NetlistBuilderBase Via(Path64 path, long finished_hole_size, long plating_thickness, int lower_layer = 0, int upper_layer = -1)
+    public override NetlistBuilderBase Via(Polygon path, long finished_hole_size, long plating_thickness, int lower_layer = 0, int upper_layer = -1)
     {
         Vias.Add(new Via(path, finished_hole_size, plating_thickness, lower_layer, upper_layer));
         return this;

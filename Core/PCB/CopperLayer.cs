@@ -1,25 +1,27 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.PCB;
+﻿using GerberParser.Abstracts.PCB;
 using GerberParser.Core.OBJECT;
 using GerberParser.Core.Svg;
 using GerberParser.Property.PCB;
 using GerberParser.Core.ClipperPath;
 namespace GerberParser.Core.PCB;
 
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+
 public class CopperLayer : Layer
 {
-    public Paths64 Layer { get; }
-    public Paths64 Copper { get; }
-    public Paths64 CopperExclPth { get; }
+    public Polygons Layer { get; }
+    public Polygons Copper { get; }
+    public Polygons CopperExclPth { get; }
 
-    public CopperLayer(string name, Paths64 board_shape, Paths64 board_shape_excl_pth,
-        Paths64 copper_layer, double thickness) : base(name, thickness) {
+    public CopperLayer(string name, Polygons board_shape, Polygons board_shape_excl_pth,
+        Polygons copper_layer, double thickness) : base(name, thickness) {
         Layer = copper_layer;
         Copper = board_shape.Intersect(copper_layer);
         CopperExclPth = board_shape_excl_pth.Intersect(copper_layer);
     }
 
-    public override Paths64 GetMask()
+    public override Polygons GetMask()
         => Layer;
 
     public override LayerSvg ToSvg(ColorScheme colors, bool flipped, string idPrefix)

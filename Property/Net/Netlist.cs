@@ -1,6 +1,8 @@
-﻿using Clipper2Lib;
+﻿namespace GerberParser.Property.Net;
 
-namespace GerberParser.Property.Net;
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using ClipperLib;
 
 public class Netlist
 {
@@ -10,7 +12,7 @@ public class Netlist
     public List<string> builderViolations { get; set; } = new List<string>();
     public Dictionary<string, LogicalNet> logicalNets { get; set; } = new Dictionary<string, LogicalNet>();
 
-    private double PointToLineDistanceSqr(Point64 point, Point64 a, Point64 b)
+    private double PointToLineDistanceSqr(IntPoint point, IntPoint a, IntPoint b)
     {
         double ax = (double)a.X;
         double ay = (double)a.Y;
@@ -52,7 +54,7 @@ public class Netlist
         return dx * dx + dy * dy;
     }
 
-    private double PointToPathDistanceSqr(Point64 point, Path64 p, bool closed)
+    private double PointToPathDistanceSqr(IntPoint point, Polygon p, bool closed)
     {
         double rSqrMin = double.PositiveInfinity;
 

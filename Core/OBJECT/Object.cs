@@ -1,8 +1,11 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.Object;
+﻿using GerberParser.Abstracts.Object;
 using GerberParser.Core.EARCUT;
 using GerberParser.Property.Obj;
 using GerberParser.Vertex;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using ClipperLib;
 
 namespace GerberParser.Core.OBJECT;
 
@@ -24,7 +27,7 @@ public class Object : ObjectBase
         Faces.Add(corners);
     }
 
-    public override void AddRing(Path64 outline, double z1, double z2)
+    public override void AddRing(Polygon outline, double z1, double z2)
     {
         if (outline.Count < 3)
         {
@@ -53,44 +56,49 @@ public class Object : ObjectBase
         }
     }
 
-    public override void AddSheet(Paths64 polygons, double z1, double z2)
+    public override void PolyNodesToRings(List<PolyNode> nodes, double z1, double z2)
     {
-        Clipper64 clipper = new Clipper64();
-        clipper.PreserveCollinear = true;
-        clipper.AddSubject(polygons);
-
-        PolyTree64 solutionClosed = new PolyTree64();
-        Paths64 solutionOpen = new Paths64();
-
-        clipper.Execute(ClipType.Union, FillRule.NonZero, solutionClosed, solutionOpen);
-
-
-        PolyNodesToSurfaces(solutionClosed, z1);
-        PolyNodesToSurfaces(solutionClosed, z2);
-
-
-        foreach (var path in solutionOpen)
+        foreach (var node in nodes)
         {
-            AddRing(path, z1, z2);
+            AddRing(node.Contour, z1, z2);
+
+            PolyNodesToRings(node.Childs, z1,z2);
         }
     }
 
-    public override void AddSurface(Paths64 polygon, double z)
+
+    public override void AddSheet(Polygons polygons, double z1, double z2)
     {
-        Clipper64 clipper = new Clipper64();
+        var clipper = new Clipper();
         clipper.PreserveCollinear = true;
-        clipper.AddSubject(polygon);
+        clipper.AddPaths(polygons, PolyType.ptSubject, true);
 
-        PolyTree64 solutionClosed = new PolyTree64();
-        Paths64 solutionOpen = new Paths64();
+        PolyTree solutionClosed = new();
 
-        clipper.Execute(ClipType.Union, FillRule.NonZero, solutionClosed, solutionOpen);
+        clipper.Execute(ClipType.ctUnion, solutionClosed);
 
-        PolyNodesToSurfaces(solutionClosed, z);
+
+        PolyNodesToSurfaces(solutionClosed.Childs, z1);
+        PolyNodesToSurfaces(solutionClosed.Childs, z2);
+
+        PolyNodesToRings(solutionClosed.Childs, z1, z2);
+    }
+
+    public override void AddSurface(Polygons polygon, double z)
+    {
+        var clipper = new Clipper();
+        clipper.StrictlySimple = true;
+        clipper.AddPaths(polygon, PolyType.ptSubject, true);
+
+        PolyTree solutionClosed = new();
+
+        clipper.Execute(ClipType.ctUnion, solutionClosed);
+
+        PolyNodesToSurfaces(solutionClosed.Childs, z);
 
     }
 
-    public override void AddSurface(Path64 polygon, Paths64 holes, double z)
+    public override void AddSurface(Polygon polygon, Polygons holes, double z)
     {
         var shapeData = new List<List<Vertex2>>(1 + holes.Count);
         var vertexData = new List<Vertex2>();
@@ -116,37 +124,27 @@ public class Object : ObjectBase
         }
     }
 
-    public override void PolyNodesToSurfaces(PolyTree64 rootNode, double z)
+    public override void PolyNodesToSurfaces(List<PolyNode> rootNode, double z)
     {
-        Stack<PolyPath64> stack = new Stack<PolyPath64>();
-        stack.Push(rootNode);
-
-        while (stack.Count > 0)
+        
+        foreach(var node in rootNode)
         {
-            PolyPath64 node = stack.Pop();
-
             if (node.IsHole)
+                throw new ArgumentException("Shape is a hole?");
+
+            Polygons holes = new Polygons();
+
+            foreach(var hole in node.Childs)
             {
-                throw new InvalidOperationException("Shape is a hole?");
+                if(!hole.IsHole)
+                    throw new ArgumentException("Hole is not a hole?");
+
+                holes.Add(hole.Contour);
+                PolyNodesToSurfaces(hole.Childs, z);
             }
 
-            Paths64 holes = new Paths64();
+            AddSurface(node.Contour, holes, z);
 
-            for (int i = 0; i < node.Count; i++)
-            {
-                PolyPath64 childNode = node[i];
-
-                if (!childNode.IsHole)
-                {
-                    throw new InvalidOperationException("Hole is not a hole?");
-                }
-
-                holes.Add(childNode.Polygon);
-
-                stack.Push(childNode);
-            }
-
-            AddSurface(node.Polygon, holes, z);
         }
     }
 

@@ -1,10 +1,13 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 using GerberParser.Abstracts.Aperture;
 using GerberParser.Core.ClipperPath;
 using GerberParser.Core.Coord;
 using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using PolygonClip = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 public class Obround : Standard
 {
@@ -29,9 +32,9 @@ public class Obround : Standard
         x -= r;
         y -= r;
 
-        var paths = new Paths64
+        var paths = new Polygons
         {
-            new Path64 { new Point64(-x, -y), new Point64(x, y) }
+            new PolygonClip { new IntPoint(-x, -y), new IntPoint(x, y) }
         }.Render(r * 2.0, false, fmt.BuildClipperOffset());
 
         if (HoleDiameter > 0)

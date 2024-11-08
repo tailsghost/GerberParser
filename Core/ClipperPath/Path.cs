@@ -1,24 +1,26 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
+
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
 
 namespace GerberParser.Core.ClipperPath;
 
 public static class ClipperPath
 {
-    public static Paths64 Render(this Paths64 paths, double thickness, bool square, ClipperOffset co)
+    public static Polygons Render(this Polygons paths, double thickness, bool square, ClipperOffset co)
     {
-        JoinType joinType = square ? JoinType.Miter : JoinType.Round;
-        EndType endType = square ? EndType.Butt : EndType.Round;
+        JoinType joinType = square ? JoinType.jtMiter : JoinType.jtRound;
+        EndType endType = square ? EndType.etOpenButt : EndType.etOpenRound;
 
         co.AddPaths(paths, joinType, endType);
 
-        Paths64 outPaths = new Paths64();
+        Polygons outPaths = new Polygons();
 
-        co.Execute(thickness * 0.5, outPaths);
+        co.Execute(ref outPaths,thickness * 0.5);
 
         return outPaths;
     }
 
-    public static void Append(this Paths64 dest, Paths64 src)
+    public static void Append(this Polygons dest, Polygons src)
     {
         if (src.Count == 0)
         {
@@ -33,73 +35,55 @@ public static class ClipperPath
 
         dest.AddRange(src);
 
-        dest = dest.SimplifyPolygons(); 
+        dest = Clipper.SimplifyPolygons(dest); 
     }
 
-    private static Paths64 PathOp(this Paths64 lhs, Paths64 rhs, ClipType op)
+    private static Polygons PathOp(this Polygons lhs, Polygons rhs, ClipType op)
     {
-        var clipper = new Clipper64();
-        clipper.AddSubject(lhs);
-        clipper.AddClip(rhs);
+        var clipper = new Clipper();
 
-        Paths64 solutionClosed = new Paths64();
+        clipper.AddPaths(lhs, PolyType.ptSubject, true);
+        clipper.AddPaths(rhs, PolyType.ptClip, true);
 
-        clipper.Execute(op, FillRule.NonZero, solutionClosed);
+        Polygons solutionClosed = new Polygons();
+
+        clipper.Execute(op, solutionClosed);
 
         return solutionClosed; 
     }
 
-    public static Paths64 Add(this Paths64 lhs, Paths64 rhs)
+    public static Polygons Add(this Polygons lhs, Polygons rhs)
     {
-        return PathOp(lhs, rhs, ClipType.Union);
+        return PathOp(lhs, rhs, ClipType.ctUnion);
     }
 
-    public static Paths64 Subtract(this Paths64 lhs, Paths64 rhs)
+    public static Polygons Subtract(this Polygons lhs, Polygons rhs)
     {
-        return PathOp(lhs, rhs, ClipType.Difference);
+        return PathOp(lhs, rhs, ClipType.ctDifference);
     }
 
-    public static Paths64 Intersect(this Paths64 lhs, Paths64 rhs)
+    public static Polygons Intersect(this Polygons lhs, Polygons rhs)
     {
-        return PathOp(lhs, rhs, ClipType.Intersection);
+        return PathOp(lhs, rhs, ClipType.ctIntersection);
     }
 
-    public static Paths64 Offset(this Paths64 src, double amount, bool square)
+    public static Polygons Offset(this Polygons src, double amount, bool square, ClipperOffset co)
     {
+        JoinType joinType = square ? JoinType.jtMiter : JoinType.jtRound;
 
-        Clipper64 clipper = new();
+        co.AddPaths(src, square ? JoinType.jtMiter : JoinType.jtRound, EndType.etClosedLine);
 
-        JoinType joinType = square ? JoinType.Miter : JoinType.Round;
-
-        clipper.AddSubject(src);
-
-        Paths64 result = new Paths64();
+        Polygons result = new Polygons();
 
         if (amount < 0)
         {
-            clipper.Execute(ClipType.Difference, FillRule.NonZero, result);
+            co.Execute(ref result, -amount);
+            return Subtract(src, result);
         }
         else
         {
-            clipper.Execute(ClipType.Union, FillRule.NonZero, result);
+            co.Execute(ref result, amount);
+            return Add(src, result);
         }
-
-        return result;
-    }
-
-    public static Paths64 SimplifyPolygons(this Paths64 paths, FillRule fillRule = FillRule.EvenOdd, double epsilon = 0.001)
-    {
-        Paths64 simplifiedPaths = Clipper.SimplifyPaths(paths, epsilon, true);
-
-        var clipper = new Clipper64();
-
-        clipper.AddSubject(simplifiedPaths);
-
-        Paths64 resultClosed = new Paths64();
-        Paths64 resultOpen = new Paths64();
-
-        clipper.Execute(ClipType.Union, fillRule, resultClosed, resultOpen);
-
-        return resultClosed;
     }
 }

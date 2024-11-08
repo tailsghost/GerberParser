@@ -1,16 +1,16 @@
-﻿using Clipper2Lib;
+﻿namespace GerberParser.Property.Drill;
 
-namespace GerberParser.Property.Drill;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 public class Via
 {
-    public Via(Path64 path, long finished_hole_size)
+    public Via(Polygon path, long finished_hole_size)
     {
         Path = path;
         Finished_hole_size = finished_hole_size;
     }
 
-    public Path64 Path { get; }
+    public Polygon Path { get; }
 
     public long Finished_hole_size { get; }
 }

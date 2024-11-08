@@ -1,6 +1,7 @@
-﻿using Clipper2Lib;
+﻿namespace GerberParser.Helpers;
 
-namespace GerberParser.Helpers;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using ClipperLib;
 
 public class CircularInterpolationHelper
 {
@@ -17,9 +18,9 @@ public class CircularInterpolationHelper
     }
 
     public CircularInterpolationHelper(
-        Point64 start,
-        Point64 end,
-        Point64 center,
+        IntPoint start,
+        IntPoint end,
+        IntPoint center,
         bool ccw,
         bool multi)
     {
@@ -62,13 +63,13 @@ public class CircularInterpolationHelper
         return Math.Max(r1, r2);
     }
 
-    public Path64 ToPath(double epsilon)
+    public Polygon ToPath(double epsilon)
     {
         double r = (r1 + r2) * 0.5;
         double x = (r > epsilon) ? (1.0 - epsilon / r) : 0.0;
         double th = Math.Acos(2.0 * x * x - 1.0) + 1e-3;
         int nVertices = (int)Math.Ceiling(Math.Abs(a2 - a1) / th);
-        Path64 p = new Path64();
+        Polygon p = new();
 
         for (int i = 0; i <= nVertices; i++)
         {
@@ -78,7 +79,7 @@ public class CircularInterpolationHelper
             double va = f1 * a1 + f2 * a2;
             double vx = centerX + vr * Math.Cos(va);
             double vy = centerY + vr * Math.Sin(va);
-            p.Add(new Point64((int)Math.Round(vx), (int)Math.Round(vy)));
+            p.Add(new IntPoint((int)Math.Round(vx), (int)Math.Round(vy)));
         }
 
         return p;

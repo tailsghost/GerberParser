@@ -1,11 +1,14 @@
-﻿using Clipper2Lib;
+﻿using ClipperLib;
 using GerberParser.Helpers;
 
 namespace GerberParser.Property.Net;
 
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+
 public class Via
 {
-    public Path64 path { get; }
+    public Polygon path { get; }
 
     public long finishedHoleSize { get; }
 
@@ -16,7 +19,7 @@ public class Via
     public int upperLayer { get; }
 
     public Via(
-        Path64 path,
+        Polygon path,
         long finishedHoleSize,
         long platingThickness,
         int lowerLayer = 0,
@@ -29,7 +32,7 @@ public class Via
         this.upperLayer = upperLayer;
     }
 
-    public Point64 GetCoordinate()
+    public IntPoint GetCoordinate()
     {
         return path[0];
     }

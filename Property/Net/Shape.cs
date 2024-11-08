@@ -1,19 +1,21 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.Aperture;
+﻿
+using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
+using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using ClipperLib;
 
 namespace GerberParser.Property.Net;
 
 public class Shape
 {
-    public Path64 outline { get; }
+    public Polygon outline { get; }
 
-    public List<Path64> holes { get; }
+    public Polygons holes { get; }
 
-    public Rect64 boundingBox { get; set; }
+    public IntRect boundingBox { get; set; }
 
     public int layer { get; }
 
-    public Shape(Path64 outline, List<Path64> holes, int layer)
+    public Shape(Polygon outline, Polygons holes, int layer)
     {
         this.outline = outline;
         this.holes = holes;
@@ -21,7 +23,7 @@ public class Shape
         CalculateBoundingBox(outline);
     }
 
-    public bool Contains(Point64 point)
+    public bool Contains(IntPoint point)
     {
         if (point.X < boundingBox.left || point.X > boundingBox.right ||
             point.Y < boundingBox.bottom || point.Y > boundingBox.top)
@@ -32,7 +34,7 @@ public class Shape
 
         foreach (var hole in holes)
         {
-            if (Clipper.PointInPolygon(point, hole) == (PointInPolygonResult)1)
+            if (Clipper.PointInPolygon(point, hole) == 1)
                 return false;
         }
 
@@ -40,9 +42,9 @@ public class Shape
     }
 
 
-    public void CalculateBoundingBox(Path64 outline)
+    public void CalculateBoundingBox(Polygon outline)
     {
-        boundingBox = new Rect64()
+        boundingBox = new IntRect()
         {
             left = outline[0].X,
             right = outline[0].X,
@@ -52,7 +54,7 @@ public class Shape
 
         foreach (var coord in outline)
         {
-            boundingBox = new Rect64
+            boundingBox = new IntRect
             {
                 left = Math.Min(boundingBox.left, coord.X),
                 bottom = Math.Min(boundingBox.bottom, coord.Y),

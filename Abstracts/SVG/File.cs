@@ -1,6 +1,4 @@
-﻿using Clipper2Lib;
-using GerberParser.Abstracts.PCB;
-using GerberParser.Core.Coord;
+﻿using GerberParser.Abstracts.PCB;
 
 namespace GerberParser.Abstracts.SVG;
 

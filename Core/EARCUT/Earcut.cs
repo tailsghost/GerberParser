@@ -98,12 +98,12 @@ public class Earcut
         if (clockwise == sum > 0)
         {
             for (int i = 0; i < len; i++)
-                last = InsertNode(i, points[i], last);
+                last = InsertNode(i, points[i], last!);
         }
         else
         {
             for (int i = len; i-- > 0;)
-                last = InsertNode(i, points[i], last);
+                last = InsertNode(i, points[i], last!);
         }
 
         if (last != null && Equals(last, last.Next))
@@ -126,10 +126,10 @@ public class Earcut
         {
             again = false;
 
-            if (!p.Steiner && (Equals(p, p.Next) || Area(p.Prev, p, p.Next) == 0))
+            if (!p.Steiner && (Equals(p, p.Next) || Area(p.Prev!, p, p.Next!) == 0))
             {
                 RemoveNode(p);
-                p = end = p.Prev;
+                p = end = p.Prev!;
 
                 if (p == p.Next) break;
                 again = true;
@@ -149,8 +149,8 @@ public class Earcut
 
         if (pass == 0 && Hashing) IndexCurve(ear);
 
-        Node<int> stop = ear;
-        Node<int> prev, next;
+        Node<int>? stop = ear;
+        Node<int>? prev, next;
 
         while (ear.Prev != ear.Next)
         {
@@ -159,9 +159,9 @@ public class Earcut
 
             if (Hashing ? IsEarHashed(ear) : IsEar(ear))
             {
-                Indices.Append(prev.i);
-                Indices.Append(ear.i);
-                Indices.Append(next.i);
+                _ = Indices.Append(prev.i);
+                _ = Indices.Append(ear.i);
+                _ = Indices.Append(next.i);
 
                 RemoveNode(ear);
 
@@ -285,7 +285,7 @@ public class Earcut
                     Node<int> c = SplitPolygon(a, b);
 
                     a = FilterPoints(a, a.Next);
-                    c = FilterPoints(c, c.Next);
+                    c = FilterPoints(c, c.Next!);
 
                     EarcutLinked(a, 0);
                     EarcutLinked(c, 0);
@@ -319,7 +319,7 @@ public class Earcut
         foreach (var hole in queue)
         {
             EliminateHole(hole, outerNode);
-            outerNode = FilterPoints(outerNode, outerNode.Next);
+            outerNode = FilterPoints(outerNode, outerNode.Next!);
         }
 
         return outerNode;
@@ -331,7 +331,7 @@ public class Earcut
         if (outerNode != null)
         {
             Node<int> b = SplitPolygon(outerNode, hole);
-            FilterPoints(b, b.Next);
+            FilterPoints(b, b.Next!);
         }
     }
 

@@ -4,13 +4,8 @@ using System.Globalization;
 
 namespace GerberParser.Core.Coord;
 
-public class ConcreteFormat : FormatBase
+public class ConcreteFormat(double maxDeviation = 0.005, double miterLimit = 1.0) : FormatBase(maxDeviation, miterLimit)
 {
-    public ConcreteFormat(double maxDeviation = 0.005, double miterLimit = 1.0)
-        : base(maxDeviation, miterLimit)
-    {
-    }
-
     public override void ConfigureFormat(int nInt, int nDec)
     {
         TryToReconfigure();

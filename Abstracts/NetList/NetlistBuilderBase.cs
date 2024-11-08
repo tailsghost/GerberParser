@@ -9,13 +9,13 @@ using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 public abstract class NetlistBuilderBase
 {
-    public List<Polygons> Layers { get; }
+    public List<Polygons> Layers { get; } = [];
 
-    public List<Via> Vias { get; }
+    public List<Via> Vias { get; } = [];
 
-    public Dictionary<string, LogicalNet> LogicalNets { get; }
+    public Dictionary<string, LogicalNet> LogicalNets { get; } = [];
 
-    public List<ConnectionPoint> ConnectionPoints { get; }
+    public List<ConnectionPoint> ConnectionPoints { get; } = [];
 
     public abstract NetlistBuilderBase Layer(Polygons paths);
 

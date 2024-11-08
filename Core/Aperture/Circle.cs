@@ -8,13 +8,12 @@ using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
 
-using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
-using PolygonClip = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using Polygons = List<List<IntPoint>>;
+using PolygonClip = List<IntPoint>;
 
 public class Circle : Standard
 {
     private long Diameter { get; set; }
-    private double HoleDiameter { get; set; }
 
     public Circle(List<string> csep, ConcreteFormat fmt)
     {
@@ -38,7 +37,7 @@ public class Circle : Standard
         Plot = new Plot(paths);
     }
 
-    public override bool IsSimpleCircle(out long? diameter)
+    public override bool IsSimpleCircle(out  double diameter)
     {
         if (HoleDiameter > 0.0)
         {

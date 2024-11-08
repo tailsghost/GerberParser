@@ -7,19 +7,19 @@ using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
 
-using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
-using PolygonClip = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using Polygons = List<List<IntPoint>>;
+using PolygonClip = List<IntPoint>;
 
 public class ApertureMacro : ApertureMacroBase
 {
-    private readonly List<List<Expression>> cmds = new List<List<Expression>>();
+    private readonly List<List<Expression>> cmds = [];
 
     public override void Append(string cmd)
     {
-        if (cmd.StartsWith("$"))
+        if (cmd.StartsWith('$'))
         {
             var parts = cmd.Split('=');
-            cmds.Add(new List<Expression> { Expression.Parse(parts[0]), Expression.Parse(parts[1]) });
+            cmds.Add([Expression.Parse(parts[0]), Expression.Parse(parts[1])]);
         }
         else
         {
@@ -48,25 +48,25 @@ public class ApertureMacro : ApertureMacroBase
 
             switch (code)
             {
-                case 1: 
+                case 1:
                     HandleCircle(cmd, vars, plot, fmt);
                     break;
-                case 20: 
+                case 20:
                     HandleVectorLine(cmd, vars, plot, fmt);
                     break;
-                case 21: 
+                case 21:
                     HandleCenterLine(cmd, vars, plot, fmt);
                     break;
-                case 4: 
+                case 4:
                     HandleOutline(cmd, vars, plot, fmt);
                     break;
-                case 5: 
+                case 5:
                     HandlePolygon(cmd, vars, plot, fmt);
                     break;
-                case 6: 
+                case 6:
                     HandleMoire(cmd, vars, plot, fmt);
                     break;
-                case 7: 
+                case 7:
                     HandleThermal(cmd, vars, plot, fmt);
                     break;
                 default:
@@ -77,10 +77,10 @@ public class ApertureMacro : ApertureMacroBase
         return new Custom(plot);
     }
 
-    private void HandleCircle(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
+    private static void HandleCircle(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
 
-        if (cmd.Count() < 5 || cmd.Count() > 6)
+        if (cmd.Count < 5 || cmd.Count > 6)
             throw new ArgumentException("Invalid circle command in aperture macro");
 
         bool exposure = cmd[1].Eval(vars) > 0.5;
@@ -97,10 +97,10 @@ public class ApertureMacro : ApertureMacroBase
         plot.DrawPaths(paths, exposure, 0,0,false,false, rotation/ (180*Math.PI));
     }
 
-    private void HandleVectorLine(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
+    private static void HandleVectorLine(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
 
-        if (cmd.Count() < 7 || cmd.Count() > 8)
+        if (cmd.Count < 7 || cmd.Count > 8)
             throw new ArgumentException("Invalid circle command in aperture macro");
 
         bool exposure = cmd[1].Eval(vars) > 0.5;
@@ -123,7 +123,7 @@ public class ApertureMacro : ApertureMacroBase
         plot.DrawPaths(paths, exposure, 0,0,false,false, rotation / (180 * Math.PI));
     }
 
-    private void HandleCenterLine(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
+    private static void HandleCenterLine(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
         if (cmd.Count < 6 || cmd.Count > 7)
             throw new ArgumentException("invalid center line command in aperture macro");
@@ -149,7 +149,7 @@ public class ApertureMacro : ApertureMacroBase
         plot.DrawPaths(paths, exposure, 0,0,false,false,rotation / (180 * Math.PI));
     }
 
-    private void HandleOutline(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
+    private static void HandleOutline(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
 
         if (cmd.Count < 3)
@@ -160,7 +160,7 @@ public class ApertureMacro : ApertureMacroBase
         int rotationIndex = 5 + 2 * nVertices;
         double rotation = cmd.Count > (5 + 2 * nVertices) ? cmd.Last().Eval(vars) : 0;
 
-        if (nVertices < 3 || cmd.Count() < rotationIndex || cmd.Count() > rotationIndex + 1)
+        if (nVertices < 3 || cmd.Count < rotationIndex || cmd.Count > rotationIndex + 1)
             throw new ArgumentException("Invalid outline command in aperture macro");
 
         var paths = new Polygons();
@@ -169,16 +169,16 @@ public class ApertureMacro : ApertureMacroBase
         {
             double x = fmt.ToFixed(cmd[3 + 2 * i].Eval(vars));
             double y = fmt.ToFixed(cmd[4 + 2 * i].Eval(vars));
-            paths.Add(new PolygonClip { new IntPoint(x, y) });
+            paths.Add([new IntPoint(x, y)]);
         }
 
         plot.DrawPaths(paths, exposure, 0,0,false,false,rotation / (180 * Math.PI), 1.0, true, PolyFillType.pftNonZero);
     }
 
-    private void HandlePolygon(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
+    private static void HandlePolygon(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
 
-        if (cmd.Count() < 6 || cmd.Count() > 7)
+        if (cmd.Count < 6 || cmd.Count > 7)
             throw new ArgumentException("Invalid polygon command in aperture macro");
 
         bool exposure = cmd[1].Eval(vars) > 0.5;
@@ -195,16 +195,16 @@ public class ApertureMacro : ApertureMacroBase
             double angle = ((double)i / nVertices) * 2.0 * Math.PI;
             double x = centerX + diameter * 0.5 * Math.Cos(angle);
             double y = centerY + diameter * 0.5 * Math.Sin(angle);
-            paths.Add(new PolygonClip { new IntPoint(fmt.ToFixed(x), fmt.ToFixed(y))});
+            paths.Add([new IntPoint(fmt.ToFixed(x), fmt.ToFixed(y))]);
         }
 
         plot.DrawPaths(paths, exposure, 0,0,false,false,rotation/(180*Math.PI));
     }
 
-    private void HandleMoire(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
+    private static void HandleMoire(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
 
-        if (cmd.Count() < 9 || cmd.Count() > 10)
+        if (cmd.Count < 9 || cmd.Count > 10)
             throw new ArgumentException("Invalid moire command in aperture macro");
 
         double centerX = cmd[1].Eval(vars);
@@ -241,30 +241,30 @@ public class ApertureMacro : ApertureMacroBase
 
         if (chThickness > 0.0 && chLength > 0.0)
         {
-            paths.Add(new PolygonClip
-            {
+            paths.Add(
+            [
                 new IntPoint(fmt.ToFixed(centerX + chThickness * 0.5), fmt.ToFixed(centerY + chLength * 0.5)),
                 new IntPoint(fmt.ToFixed(centerX - chThickness * 0.5), fmt.ToFixed(centerY + chLength * 0.5)),
                 new IntPoint(fmt.ToFixed(centerX - chThickness * 0.5), fmt.ToFixed(centerY - chLength * 0.5)),
                 new IntPoint(fmt.ToFixed(centerX + chThickness * 0.5), fmt.ToFixed(centerY - chLength * 0.5))
-            });
+            ]);
 
-            paths.Add(new PolygonClip
-            {
+            paths.Add(
+            [
                 new IntPoint(fmt.ToFixed(centerX + chLength * 0.5), fmt.ToFixed(centerY + chThickness * 0.5)),
                 new IntPoint(fmt.ToFixed(centerX - chLength * 0.5), fmt.ToFixed(centerY + chThickness * 0.5)),
                 new IntPoint(fmt.ToFixed(centerX - chLength * 0.5), fmt.ToFixed(centerY - chThickness * 0.5)),
                 new IntPoint(fmt.ToFixed(centerX + chLength * 0.5), fmt.ToFixed(centerY - chThickness * 0.5))
-            });
+            ]);
         }
 
         //Возможно NonZero
         plot.DrawPaths(paths, true, 0,0,false,false,rotation/(180*Math.PI), 1.0, true, PolyFillType.pftPositive);
     }
 
-    private void HandleThermal(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
+    private static void HandleThermal(List<Expression> cmd, Dictionary<int, double> vars, Plot plot, ConcreteFormat fmt)
     {
-        if (cmd.Count() < 6 || cmd.Count() > 7)
+        if (cmd.Count < 6 || cmd.Count > 7)
             throw new ArgumentException("Invalid thermal command in aperture macro");
 
         double centerX = cmd[1].Eval(vars);
@@ -289,20 +289,20 @@ public class ApertureMacro : ApertureMacroBase
 
         if(gap>0.0)
         {
-            paths.Add(new PolygonClip
-            {
+            paths.Add(
+            [
                 new IntPoint(fmt.ToFixed(centerX + gap * 0.5), fmt.ToFixed(centerY + outer * 0.5)),
                 new IntPoint(fmt.ToFixed(centerY + gap * 0.5), fmt.ToFixed(centerY - outer * 0.5)),
                 new IntPoint(fmt.ToFixed(centerY - gap * 0.5), fmt.ToFixed(centerY - outer * 0.5)),
                 new IntPoint(fmt.ToFixed(centerY - gap * 0.5), fmt.ToFixed(centerY + outer * 0.5)),
-            });
-            paths.Add(new PolygonClip
-            {
+            ]);
+            paths.Add(
+            [
                 new IntPoint(fmt.ToFixed(centerX + outer * 0.5), fmt.ToFixed(centerY + gap * 0.5)),
                 new IntPoint(fmt.ToFixed(centerX + outer * 0.5), fmt.ToFixed(centerY - gap * 0.5)),
                 new IntPoint(fmt.ToFixed(centerX - outer * 0.5), fmt.ToFixed(centerY - gap * 0.5)),
                 new IntPoint(fmt.ToFixed(centerX - outer * 0.5), fmt.ToFixed(centerY + gap * 0.5)),
-            });
+            ]);
         }
 
         //Возможно NonZero

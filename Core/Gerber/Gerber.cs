@@ -11,12 +11,8 @@ using ClipperLib;
 
 namespace GerberParser.Core.GERBER;
 
-public class Gerber : GerberBase
+public class Gerber(StringReader stream) : GerberBase(stream)
 {
-    public Gerber(StringReader stream) : base(stream)
-    {
-    }
-
     public override Polygons GetOutlinePaths()
     {
         //Метод полностью протестирован, на 100% работает!!!
@@ -31,7 +27,7 @@ public class Gerber : GerberBase
 
         foreach (var path in Outlines)
         {
-            var endpts = (first: (List<int>)null, second: (List<int>)null);
+            var endpts = (first: new List<int>(), second: new List<int>());
 
             for (int endpt = 0; endpt < 2; endpt++)
             {
@@ -118,8 +114,10 @@ public class Gerber : GerberBase
 
             if (isLoop)
             {
-                var pathsPoly = new Polygons();
-                pathsPoly.Add(path);
+                var pathsPoly = new Polygons
+                {
+                    path
+                };
                 if (Clipper.Area(path) < 0)
                 {
                     Clipper.ReversePaths(pathsPoly);
@@ -188,24 +186,24 @@ public class Gerber : GerberBase
                     i++;
                 }
 
-                if (!int.TryParse(cmd.Substring(start, i - start), out int index) || index < 10)
+                if (!int.TryParse(cmd.AsSpan(start, i - start), out int index) || index < 10)
                 {
                     throw new Exception("Aperture index out of range: " + cmd);
                 }
 
-                List<string> csep = new List<string>();
+                List<string> csep = [];
                 start = i;
 
                 while (i < cmd.Length)
                 {
                     if (cmd[i] == ',' || (csep.Count > 0 && cmd[i] == 'X'))
                     {
-                        csep.Add(cmd.Substring(start, i - start));
+                        csep.Add(cmd[start..i]);
                         start = i + 1;
                     }
                     i++;
                 }
-                csep.Add(cmd.Substring(start, i - start));
+                csep.Add(cmd[start..i]);
 
                 if (csep.Count == 0)
                 {
@@ -239,7 +237,7 @@ public class Gerber : GerberBase
 
             if (cmd.StartsWith("AM"))
             {
-                var name = cmd.Substring(2);
+                var name = cmd[2..];
                 AmBuilder = new ApertureMacro();
                 ApertureMacros[name] = AmBuilder;
                 return true;
@@ -255,7 +253,7 @@ public class Gerber : GerberBase
                 }
                 else
                 {
-                    int index = int.Parse(cmd.Substring(3));
+                    int index = int.Parse(cmd[3..]);
                     if (index < 10)
                         throw new Exception("Aperture index out of range: " + cmd);
 
@@ -296,12 +294,12 @@ public class Gerber : GerberBase
                 default:
                     if (cmd.StartsWith("LR"))
                     {
-                        apRotate = double.Parse(cmd.Substring(2)) * Math.PI / 180.0;
+                        apRotate = double.Parse(cmd[2..]) * Math.PI / 180.0;
                         return true;
                     }
                     if (cmd.StartsWith("LS"))
                     {
-                        apScale = double.Parse(cmd.Substring(2));
+                        apScale = double.Parse(cmd[2..]);
                         return true;
                     }
                     break;
@@ -335,16 +333,16 @@ public class Gerber : GerberBase
 
             string apCmd = cmd;
             if (cmd.StartsWith("G54D") || cmd.StartsWith("G55D"))
-                apCmd = apCmd.Substring(3);
+                apCmd = apCmd[3..];
 
-            if (apCmd.StartsWith("D") && !apCmd.StartsWith("D0"))
+            if (apCmd.StartsWith('D') && !apCmd.StartsWith("D0"))
             {
-                if (!Apertures.TryGetValue(int.Parse(apCmd.Substring(1)), out Aperture))
+                if (!Apertures.TryGetValue(int.Parse(apCmd[1..]), out Aperture))
                     throw new Exception("Undefined aperture selected");
                 return true;
             }
 
-            if (cmd.StartsWith("X") || cmd.StartsWith("Y") || cmd.StartsWith("I") || cmd.StartsWith("D"))
+            if (cmd.StartsWith('X') || cmd.StartsWith('Y') || cmd.StartsWith('I') || cmd.StartsWith('D'))
             {
                 var parameters = new Dictionary<char, long> { { 'X', Pos.X }, { 'Y', Pos.Y }, { 'I', 0 }, { 'J', 0 } };
                 int d = -1;
@@ -357,9 +355,9 @@ public class Gerber : GerberBase
                     if (i == cmd.Length || char.IsLetter(c))
                     {
                         if (code == 'D')
-                            d = int.Parse(cmd.Substring(start, i - start));
+                            d = int.Parse(cmd[start..i]);
                         else if (code != ' ')
-                            parameters[code] = fmt.ParseFixed(cmd.Substring(start, i - start));
+                            parameters[code] = fmt.ParseFixed(cmd[start..i]);
 
                         code = c;
                         start = i + 1;
@@ -438,7 +436,7 @@ public class Gerber : GerberBase
             RegionAccum.Reverse();
         }
 
-        PlotStack.Peek().DrawPaths(new Polygons { RegionAccum }, Polarity);
+        PlotStack.Peek().DrawPaths([RegionAccum], Polarity);
         RegionAccum.Clear();
     }
 
@@ -467,11 +465,11 @@ public class Gerber : GerberBase
         }
         else if (imode == InterpolationMode.LINEAR)
         {
-            path = new Polygon { Pos, dest };
+            path = [Pos, dest];
         }
         else
         {
-            CircularInterpolationHelper h = null;
+            CircularInterpolationHelper? h = null;
 
             bool ccw = imode == InterpolationMode.CIRCULAR_CCW;
 
@@ -528,12 +526,12 @@ public class Gerber : GerberBase
             throw new InvalidOperationException("Interpolate command before aperture set");
         }
 
-        if (!Aperture.IsSimpleCircle(out long? diameter))
+        if (!Aperture.IsSimpleCircle(out double diameter))
         {
             throw new InvalidOperationException("Only simple circle apertures without a hole are supported for interpolation");
         }
 
-        double thickness = (double)(diameter * apScale);
+        double thickness = diameter * apScale;
         if (thickness == 0) return;
 
         Polygons paths = new Polygons { path }.Render(thickness, false, fmt.BuildClipperOffset());

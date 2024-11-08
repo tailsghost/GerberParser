@@ -70,7 +70,7 @@ public abstract class Expression
 
     public static Expression Parse(string expr)
     {
-        List<Expression> tokens = new List<Expression>();
+        List<Expression> tokens = [];
         string currentToken = "";
         bool isNumber = false;
 

@@ -8,13 +8,13 @@ namespace GerberParser.Abstracts.PLOT;
 
 public abstract class PlotBase
 {
-    protected Polygons AccumPaths = new();
+    protected Polygons AccumPaths = [];
     protected bool AccumPolarity;
-    protected Polygons Dark = new();
-    protected Polygons Clear = new();
+    protected Polygons Dark = [];
+    protected Polygons Clear = [];
     protected bool Simplified;
 
-    protected PlotBase(Polygons dark = null, Polygons clear = null)
+    protected PlotBase(Polygons? dark = null, Polygons? clear = null)
     {
         Simplified = false;
         if (dark != null)

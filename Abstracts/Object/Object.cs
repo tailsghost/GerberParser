@@ -8,23 +8,15 @@ using ClipperLib;
 
 namespace GerberParser.Abstracts.Object;
 
-public abstract class ObjectBase
+public abstract class ObjectBase(ObjFile owner, string name, string material)
 {
+    public ObjFile Owner { get; } = owner;
 
-    protected ObjectBase(ObjFile owner, string name, string material)
-    {
-        Owner = owner;
-        Name = name;
-        Material = material;
-    }
+    public string Name { get; } = name;
 
-    public ObjFile Owner { get; }
+    public string Material { get; } = material;
 
-    public string Name { get; }
-
-    public string Material { get; }
-
-    public List<List<Corner>> Faces { get; }
+    public List<List<Corner>> Faces { get; } = [];
 
     public abstract void AddFace(List<Vertex3> vertices);
 

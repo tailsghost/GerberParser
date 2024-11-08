@@ -23,7 +23,7 @@ public class CircuitBoard : CircuitBoardBase
     {
         PlatingThickness = FormatHelper.FromMM(0.5 * COPPER_OZ.Value);
         BoardOutLine = Read_Gerber(outline, true);
-        Polygons pth = new(), npth = new();
+        Polygons pth = [], npth = [];
         BoardOutLine.AddRange(Read_Gerber("", true));
 
         foreach (var drillFile in drill)
@@ -35,9 +35,7 @@ public class CircuitBoard : CircuitBoardBase
             }
         }
 
-        Polygons holes = new();
-        holes.AddRange(pth);
-        holes.AddRange(npth);
+        Polygons holes = [.. pth, .. npth];
         BoardShape = BoardOutLine.Subtract(holes);
         BoardShapeExclPth = BoardOutLine.Subtract(npth);
 
@@ -70,7 +68,7 @@ public class CircuitBoard : CircuitBoardBase
 
     public override void Add_surface_finish()
     {
-        Polygons mask = new ();
+        Polygons mask = [];
 
         foreach (var layer in Layers)
         {
@@ -226,7 +224,7 @@ public class CircuitBoard : CircuitBoardBase
 
     public override Polygons Read_Gerber(string fname, bool outline = false)
     {
-        if (string.IsNullOrEmpty(fname)) return new Polygons();
+        if (string.IsNullOrEmpty(fname)) return [];
 
         var f = new StringReader(fname);
         var g = new Gerber(f);
@@ -245,7 +243,7 @@ public class CircuitBoard : CircuitBoardBase
         GenerateMaterial(sb, "copper", "0.800 0.700 0.300", 1.0f);
     }
 
-    public override void Write_Obj(StringWriter stream, Netlist netlist = null)
+    public override void Write_Obj(StringWriter stream, Netlist? netlist = null)
     {
         var obj = new ObjFile();
         double z = 0.0;
@@ -273,7 +271,7 @@ public class CircuitBoard : CircuitBoardBase
         obj.ToFile(stream);
     }
 
-    public override void Write_Svg(StringBuilder stream, bool flipped, double scale, ColorScheme? colors = null)
+    public override void Write_Svg(StringBuilder stream, bool flipped, double scale, ColorScheme colors)
     {
         var bounds = Get_Bounds();
 
@@ -324,15 +322,17 @@ public class CircuitBoard : CircuitBoardBase
         int nameCounter = 1;
         foreach (var net in netlist.nets)
         {
-            string name = net.logicalNets.Any() ?
+            string name = net.logicalNets.Count != 0 ?
                 $"{net.logicalNets.First().name}_{nameCounter}" :
                 $"net_{nameCounter}";
 
             nameCounter++;
             var ob = obj.AddObject(name, "copper");
 
-            var vias = new List<Via>();
-            vias.Capacity = net.vias.Count;
+            var vias = new List<Via>
+            {
+                Capacity = net.vias.Count
+            };
             foreach (var via in net.vias)
             {
                 var center = via.GetCoordinate();
@@ -372,11 +372,11 @@ public class CircuitBoard : CircuitBoardBase
                     var holes = new Polygons(shape.holes);
                     foreach (var via in vias)
                     {
-                        if (layer < via.lower_layer || layer > via.upper_layer || !shape.Contains(via.center))
+                        if (layer < via.Lower_layer || layer > via.Upper_layer || !shape.Contains(via.Center))
                             continue;
 
-                        holes.Add((layer == via.lower_layer && side == 0) || (layer == via.upper_layer && side == 1)
-                            ? via.inner : via.outer);
+                        holes.Add((layer == via.Lower_layer && side == 0) || (layer == via.Upper_layer && side == 1)
+                            ? via.Inner : via.Outer);
                     }
 
                     ob.AddSurface(shape.outline, holes, z);
@@ -385,22 +385,13 @@ public class CircuitBoard : CircuitBoardBase
         }
     }
 
-    private struct Via
+    private readonly struct Via(IntPoint center, Polygon inner, Polygon outer, int lower_layer, int upper_layer)
     {
-        public IntPoint center { get; }
-        public Polygon inner { get; }
-        public Polygon outer { get; }
-        public int lower_layer { get; }
-        public int upper_layer{ get; }
-
-        public Via(IntPoint center, Polygon inner, Polygon outer, int lower_layer, int upper_layer)
-        {
-            this.center = center;
-            this.inner = inner;
-            this.outer = outer;
-            this.upper_layer = upper_layer;
-            this.lower_layer = lower_layer;
-        }
+        public IntPoint Center { get; } = center;
+        public Polygon Inner { get; } = inner;
+        public Polygon Outer { get; } = outer;
+        public int Lower_layer { get; } = lower_layer;
+        public int Upper_layer { get; } = upper_layer;
     };
 
 }

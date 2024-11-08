@@ -5,11 +5,11 @@ namespace GerberParser.Abstracts.OBJECT;
 
 public abstract class ObjFileBase
 {
-    protected Indexed<Vertex3> Vertices { get; } = new Indexed<Vertex3>();
+    protected Indexed<Vertex3> Vertices { get; } = [];
 
-    protected Indexed<Vertex2> UvCoordinates { get; } = new Indexed<Vertex2>();
+    protected Indexed<Vertex2> UvCoordinates { get; } = [];
 
-    protected List<Core.OBJECT.Object> Objects = new();
+    protected List<Core.OBJECT.Object> Objects = [];
 
     public abstract Core.OBJECT.Object AddObject(string name, string material);
 

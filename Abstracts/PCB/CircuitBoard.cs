@@ -13,29 +13,29 @@ namespace GerberParser.Abstracts.PCB;
 public abstract class CircuitBoardBase
 {
     protected ConcreteFormat Format = new();
-    public Polygons BoardOutLine { get; protected set; } = new();
+    public Polygons BoardOutLine { get; protected set; } = [];
 
-    public Polygons BoardShape { get; protected set; } = new();
+    public Polygons BoardShape { get; protected set; } = [];
 
-    public Polygons BoardShapeExclPth { get; protected set; } = new();
+    public Polygons BoardShapeExclPth { get; protected set; } = [];
 
-    public Polygons SubstrateDielectric { get; protected set; } = new();
+    public Polygons SubstrateDielectric { get; protected set; } = [];
 
-    public Polygons SubstratePlating { get; protected set; } = new();
+    public Polygons SubstratePlating { get; protected set; } = [];
 
-    public Polygons BottomFinish { get; set; } = new();
+    public Polygons BottomFinish { get; set; } = [];
 
-    public Polygons TopFinish { get; set; } = new();
+    public Polygons TopFinish { get; set; } = [];
 
-    public List<Property.Drill.Via> Vias { get; protected set; } = new();
+    public List<Property.Drill.Via> Vias { get; protected set; } = [];
 
     public long PlatingThickness { get; protected set; }
 
-    public List<Layer> Layers { get; protected set; } = new();
+    public List<Layer> Layers { get; protected set; } = [];
 
     public ulong NumSubstrateLayers { get; set; }
 
-    protected void GenerateMaterial(StringBuilder sb, string type, string color, float transparency)
+    protected static void GenerateMaterial(StringBuilder sb, string type, string color, float transparency)
     {
         sb.AppendLine($"newmtl {type}");
         sb.AppendLine($"Kd {color}");
@@ -70,7 +70,7 @@ public abstract class CircuitBoardBase
 
     public abstract string Get_svg(bool flipped, ColorScheme colors, StringBuilder sb, string id_prefix = "");
 
-    public abstract void Write_Svg(StringBuilder stream, bool flipped, double scale, ColorScheme? colors = null);
+    public abstract void Write_Svg(StringBuilder stream, bool flipped, double scale, ColorScheme colors);
 
-    public abstract void Write_Obj(StringWriter stream, Netlist netlist = null);
+    public abstract void Write_Obj(StringWriter stream, Netlist? netlist = null);
 }

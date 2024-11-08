@@ -2,26 +2,17 @@
 
 namespace GerberParser.Abstracts.Coord;
 
-public abstract class FormatBase
+public abstract class FormatBase(double maxDeviation = 0.005, double miterLimit = 1.0)
 {
-    protected bool fmtConfigured;
+    protected bool fmtConfigured = false;
     protected int nInt;
     protected int nDec;
-    protected bool unitConfigured;
-    protected bool addTrailingZeros;
+    protected bool unitConfigured = false;
+    protected bool addTrailingZeros = false;
     protected double factor;
-    protected bool used;
-    protected double miterLimit;
-    protected double maxDeviation;
-    protected FormatBase(double maxDeviation = 0.005, double miterLimit = 1.0)
-    {
-        this.maxDeviation = maxDeviation;
-        this.miterLimit = miterLimit;
-        this.addTrailingZeros = false;
-        this.unitConfigured = false;
-        this.fmtConfigured = false;
-        this.used = false;
-    }
+    protected bool used = false;
+    protected double miterLimit = miterLimit;
+    protected double maxDeviation = maxDeviation;
 
     public abstract void ConfigureFormat(int nInt, int nDec);
 

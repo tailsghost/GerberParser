@@ -6,14 +6,13 @@ using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
 
-using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
-using PolygonClip = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using Polygons = List<List<IntPoint>>;
+using PolygonClip = List<IntPoint>;
 
 public class Obround : Standard
 {
     private double XSize { get; set; }
     private double YSize { get; set; }
-    private double HoleDiameter { get; set; }
 
     public Obround(List<string> csep, ConcreteFormat fmt)
     {
@@ -46,7 +45,7 @@ public class Obround : Standard
         Plot = new Plot(paths);  
     }
 
-    public override bool IsSimpleCircle(out long? diameter)
+    public override bool IsSimpleCircle(out double diameter)
     {
         diameter = 0;
         return false;

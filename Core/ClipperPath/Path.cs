@@ -13,7 +13,7 @@ public static class ClipperPath
 
         co.AddPaths(paths, joinType, endType);
 
-        Polygons outPaths = new Polygons();
+        Polygons outPaths = [];
 
         co.Execute(ref outPaths,thickness * 0.5);
 
@@ -29,13 +29,12 @@ public static class ClipperPath
 
         if (dest.Count == 0)
         {
-            dest = src;
             return;
         }
 
         dest.AddRange(src);
 
-        dest = Clipper.SimplifyPolygons(dest); 
+        dest = Clipper.SimplifyPolygons(dest);
     }
 
     private static Polygons PathOp(this Polygons lhs, Polygons rhs, ClipType op)
@@ -45,7 +44,7 @@ public static class ClipperPath
         clipper.AddPaths(lhs, PolyType.ptSubject, true);
         clipper.AddPaths(rhs, PolyType.ptClip, true);
 
-        Polygons solutionClosed = new Polygons();
+        Polygons solutionClosed = [];
 
         clipper.Execute(op, solutionClosed);
 
@@ -73,7 +72,7 @@ public static class ClipperPath
 
         co.AddPaths(src, square ? JoinType.jtMiter : JoinType.jtRound, EndType.etClosedLine);
 
-        Polygons result = new Polygons();
+        Polygons result = [];
 
         if (amount < 0)
         {

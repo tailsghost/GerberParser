@@ -5,15 +5,14 @@ using GerberParser.Core.PlotCore;
 
 namespace GerberParser.Core.Aperture;
 
-using Polygons = System.Collections.Generic.List<System.Collections.Generic.List<ClipperLib.IntPoint>>;
-using PolygonClip = System.Collections.Generic.List<ClipperLib.IntPoint>;
+using Polygons = List<List<IntPoint>>;
+using PolygonClip = List<IntPoint>;
 
 public class Polygon : Standard
 {
     private double Diameter { get; set; }
     private int NVertices { get; set; }
     private double Rotation { get; set; }
-    private double HoleDiameter { get; set; }
 
     public Polygon(List<string> csep, ConcreteFormat fmt)
     {
@@ -33,7 +32,7 @@ public class Polygon : Standard
         Rotation = csep.Count > 3 ? double.Parse(csep[3]) * Math.PI / 180.0 : 0.0;
         HoleDiameter = csep.Count > 4 ? fmt.ParseFloat(csep[4]) : 0;
 
-        Polygons paths = new();
+        Polygons paths = [];
         var polygonPath = new PolygonClip();
 
         for (int i = 0; i < NVertices; i++)
@@ -55,7 +54,7 @@ public class Polygon : Standard
         Plot = new Plot(paths);
     }
 
-    public override bool IsSimpleCircle(out long? diameter)
+    public override bool IsSimpleCircle(out double diameter)
     {
         diameter = 0;
         return false;

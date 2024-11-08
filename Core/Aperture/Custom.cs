@@ -10,7 +10,7 @@ public class Custom : Base
         Plot = data;
     }
 
-    public override bool IsSimpleCircle(out long? diameter)
+    public override bool IsSimpleCircle(out double diameter)
     {
         diameter = 0;
         return false;

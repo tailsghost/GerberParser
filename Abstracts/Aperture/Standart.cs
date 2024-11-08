@@ -10,14 +10,14 @@ namespace GerberParser.Abstracts.Aperture;
 
 public abstract class Standard : Base
 {
-    protected long? HoleDiameter;
+    protected double HoleDiameter;
 
     protected Polygons GetHole(ConcreteFormat format)
     {
 
         if (HoleDiameter <= 0.0)
         {
-            return new Polygons(); 
+            return [];
         }
 
         var holePath = new Polygon
@@ -25,7 +25,7 @@ public abstract class Standard : Base
             new IntPoint(0, 0)
         };
 
-        var paths = new Polygons { holePath }.Render((double)HoleDiameter, 
+        var paths = new Polygons { holePath }.Render(HoleDiameter, 
             false, format.BuildClipperOffset());
 
         Clipper.ReversePaths(paths);

@@ -19,21 +19,21 @@ public abstract class NCDrillBase
 
     protected bool plated;
 
-    protected Dictionary<long, Tool> Tools = new();
+    protected Dictionary<long, Tool> Tools = [];
 
-    protected Tool Tool;
+    protected Tool? Tool;
 
     protected RoutMode RoutMode;
 
     protected IntPoint Pos;
 
-    protected Polygon Path = new();
+    protected Polygon Path = [];
 
     protected Plot PlotPth = new();
 
     protected Plot PlotNpth = new();
 
-    protected List<Via> Vias = new();
+    protected List<Via> Vias = [];
     protected abstract void CommitPath();
     protected abstract void AddArc(IntPoint start, IntPoint end, long radius, bool ccw);
     protected abstract Dictionary<char, string> ParseRegularCommand(string cmd);

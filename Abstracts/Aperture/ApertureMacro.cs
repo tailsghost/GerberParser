@@ -1,12 +1,11 @@
 ﻿using GerberParser.Abstracts.APERTURE;
-using GerberParser.Abstracts.Coord;
 using GerberParser.Core.Coord;
 
 namespace GerberParser.Abstracts.Aperture;
 
 public abstract class ApertureMacroBase
 {
-    protected List<Expression> Cmd = new();
+    protected List<Expression> Cmd = [];
 
     public abstract void Append(string cmd);
 

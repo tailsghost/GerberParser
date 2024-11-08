@@ -13,13 +13,13 @@ namespace GerberParser.Abstracts.GERBER;
 
 public abstract class GerberBase
 {
-    protected Dictionary<int, Base> Apertures = new Dictionary<int, Base>();
+    protected Dictionary<int, Base> Apertures = [];
 
-    protected Dictionary<string, ApertureMacro> ApertureMacros = new Dictionary<string, ApertureMacro>();
+    protected Dictionary<string, ApertureMacro> ApertureMacros = [];
 
-    protected ApertureMacro AmBuilder;
+    protected ApertureMacro? AmBuilder;
 
-    protected Stack<Plot> PlotStack = new Stack<Plot>();
+    protected Stack<Plot> PlotStack = [];
 
     protected ConcreteFormat fmt = new();
 
@@ -27,7 +27,7 @@ public abstract class GerberBase
 
     protected QuadrantMode qmode;
 
-    protected Base Aperture;
+    protected Base? Aperture;
 
     protected IntPoint Pos;
 
@@ -43,9 +43,9 @@ public abstract class GerberBase
 
     protected bool RegionMode;
 
-    protected Polygon RegionAccum = new();
+    protected Polygon RegionAccum = [];
 
-    protected Polygons Outlines = new();
+    protected Polygons Outlines = [];
 
     protected bool OutlineConstructed;
 

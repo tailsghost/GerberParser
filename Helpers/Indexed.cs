@@ -2,10 +2,10 @@
 
 namespace GerberParser.Helpers;
 
-public class Indexed<T> : IEnumerable<T>
+public class Indexed<T> : IEnumerable<T> where T : notnull
 {
-    private List<T> Elements { get; set; } = new();
-    private Dictionary<T, ulong> Indices { get; set; } = new();
+    private List<T> Elements { get; set; } = [];
+    private Dictionary<T, ulong> Indices { get; set; } = [];
 
     public ulong Add(T element)
     {

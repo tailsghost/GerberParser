@@ -7,16 +7,10 @@ using Polygon = System.Collections.Generic.List<ClipperLib.IntPoint>;
 
 namespace GerberParser.Abstracts.PCB;
 
-public abstract class Layer
+public abstract class Layer(string name, double thickness)
 {
-    public string Name { get; }
-    public double Thickness { get; }
-
-    protected Layer(string name, double thickness)
-    {
-        Name = name;
-        Thickness = thickness;
-    }
+    public string Name { get; } = name;
+    public double Thickness { get; } = thickness;
 
     public abstract Polygons GetMask();
 

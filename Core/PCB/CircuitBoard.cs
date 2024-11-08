@@ -32,7 +32,8 @@ public class CircuitBoard : CircuitBoardBase
             }
         }
 
-        var holes = pth.Add( npth);
+        var holes = pth.Add(pth);
+        holes.Add(npth);
         BoardShape = BoardOutLine.Subtract(holes);
         BoardShapeExclPth = BoardOutLine.Subtract(npth);
 

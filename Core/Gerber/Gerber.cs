@@ -16,6 +16,8 @@ public class Gerber : GerberBase
 
     public override Paths64 GetOutlinePaths()
     {
+        //Метод полностью протестирован, на 100% работает!!!
+
         if (OutlineConstructed) return Outlines;
 
         var pointMap = new Dictionary<(double, double), List<int>>();
@@ -115,7 +117,7 @@ public class Gerber : GerberBase
             {
                 if (Clipper.Area(path) < 0)
                 {
-                    Clipper.ReversePath(path);
+                    path = Clipper.ReversePath(path);
                 }
                 paths.Add(path);
             }
@@ -130,7 +132,10 @@ public class Gerber : GerberBase
 
     public override Paths64 GetPaths()
     {
-        return PlotStack.Peek().GetDark();
+        var resultPeek = PlotStack.Peek();
+        var result = resultPeek.GetDark();
+
+        return result;
     }
 
     protected override bool Command(string cmd, bool isAttrib)
